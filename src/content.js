@@ -589,7 +589,8 @@ async function injectProfile(button) {
           
           setTimeout(() => {
             button.style.display = 'none';
-            for (const [input, btn] of injectedButtons.entries()) {
+            // Remove from injected buttons map
+            for (const [input, btn] of injectedButtons) {
               if (btn === button) {
                 injectedButtons.delete(input);
                 break;
@@ -635,7 +636,7 @@ async function injectProfile(button) {
       // Hide the button after successful attachment
       button.style.display = 'none';
       // Also remove from the injected buttons map so it can be recreated later
-      for (const [input, btn] of injectedButtons.entries()) {
+      for (const [input, btn] of injectedButtons) {
         if (btn === button) {
           injectedButtons.delete(input);
           break;
