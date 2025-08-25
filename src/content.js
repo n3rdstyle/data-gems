@@ -534,9 +534,78 @@ async function injectProfile(button) {
     }
     
     if (!fileInput) {
-      console.error('No file input found');
+      console.log('No traditional file input found, trying drag-and-drop approach...');
+      
+      // Try drag-and-drop approach for platforms like Gemini
+      try {
+        // Find a suitable drop target
+        let dropTarget = null;
+        
+        if (hostname.includes('gemini.google.com')) {
+          // Try various drop targets for Gemini
+          dropTarget = document.querySelector('.input-area') ||
+                      document.querySelector('[class*="input-area"]') ||
+                      document.querySelector('.text-input-field') ||
+                      document.querySelector('[contenteditable="true"]') ||
+                      document.body;
+        }
+        
+        if (dropTarget) {
+          console.log('Using drop target:', dropTarget);
+          
+          // Create drag-and-drop events
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(file);
+          
+          // Create and dispatch drag events
+          const dragEnterEvent = new DragEvent('dragenter', {
+            bubbles: true,
+            cancelable: true,
+            dataTransfer: dataTransfer
+          });
+          
+          const dragOverEvent = new DragEvent('dragover', {
+            bubbles: true,
+            cancelable: true,
+            dataTransfer: dataTransfer
+          });
+          
+          const dropEvent = new DragEvent('drop', {
+            bubbles: true,
+            cancelable: true,
+            dataTransfer: dataTransfer
+          });
+          
+          // Dispatch the events in sequence
+          dropTarget.dispatchEvent(dragEnterEvent);
+          dropTarget.dispatchEvent(dragOverEvent);
+          dropTarget.dispatchEvent(dropEvent);
+          
+          console.log('Dispatched drag-and-drop events');
+          
+          // Success feedback
+          button.querySelector('span').textContent = 'Attached!';
+          button.classList.add('success');
+          
+          setTimeout(() => {
+            button.style.display = 'none';
+            for (const [input, btn] of injectedButtons.entries()) {
+              if (btn === button) {
+                injectedButtons.delete(input);
+                break;
+              }
+            }
+          }, 1500);
+          
+          return; // Exit successfully
+        }
+      } catch (dragError) {
+        console.error('Drag-and-drop approach failed:', dragError);
+      }
+      
+      console.error('No file input or drop target found');
       button.classList.remove('loading');
-      button.querySelector('span').textContent = 'No file input';
+      button.querySelector('span').textContent = 'No file support';
       setTimeout(() => {
         button.querySelector('span').textContent = 'Attach my profile';
       }, 2000);
