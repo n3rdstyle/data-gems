@@ -199,7 +199,7 @@ function positionButton(button, inputElement) {
   // Get button dimensions
   const buttonWidth = 160; // Approximate button width
   const buttonHeight = 36; // Approximate button height
-  const spacing = 12; // Spacing from input field
+  const spacing = 4; // Reduced spacing from input field (was 12, now 4)
   
   // Calculate position - align with right edge of container
   button.style.position = 'absolute';
