@@ -285,7 +285,13 @@ function positionButton(button, inputElement) {
   // Get button dimensions
   const buttonWidth = 160; // Approximate button width
   const buttonHeight = 36; // Approximate button height
-  const spacing = 4; // Reduced spacing from input field (was 12, now 4)
+  let spacing = 4; // Default spacing from input field
+  
+  // Platform-specific spacing adjustments
+  const hostname = window.location.hostname;
+  if (hostname.includes('gemini.google.com')) {
+    spacing = 12; // Extra spacing for Gemini to clear the input field border
+  }
   
   // Calculate position - align with right edge of container
   button.style.position = 'absolute';
