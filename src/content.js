@@ -158,7 +158,7 @@ function findPromptContainer(inputElement) {
                 inputElement.parentElement?.parentElement ||
                 inputElement;
   } else if (hostname.includes('gemini.google.com')) {
-    // Gemini: Look for the input-gradient or chat-container
+    // Gemini: Look for the text-input-field or input-area containers (not the gradient)
     let current = inputElement;
     let bestContainer = inputElement;
     let maxWidth = inputElement.getBoundingClientRect().width;
@@ -172,24 +172,20 @@ function findPromptContainer(inputElement) {
       // Log each parent for debugging
       console.log(`Gemini parent ${i}:`, classes || current.tagName, 'width:', rect.width);
       
-      // Look for specific containers
-      if (classes.includes('input-gradient') || classes.includes('chat-container')) {
-        console.log('Found Gemini container:', classes);
-        container = current;
-        break;
+      // Look for the actual input field container (not the full-width gradient)
+      if (classes.includes('text-input-field') || classes.includes('input-area-container')) {
+        // Make sure it's not too wide (avoid full viewport containers)
+        if (rect.width < window.innerWidth * 0.7) {
+          console.log('Found suitable Gemini container:', classes, 'width:', rect.width);
+          container = current;
+          break;
+        }
       }
       
-      // Track the widest container we've seen
-      if (rect.width > maxWidth && rect.width < window.innerWidth * 0.8) {
+      // Track reasonable sized containers
+      if (rect.width > maxWidth && rect.width < window.innerWidth * 0.7) {
         maxWidth = rect.width;
         bestContainer = current;
-      }
-      
-      // Use containers wider than 540px
-      if (rect.width > 540 && rect.width < window.innerWidth * 0.8) {
-        if (!container || container === inputElement) {
-          container = current;
-        }
       }
     }
     
