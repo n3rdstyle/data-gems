@@ -16,7 +16,7 @@ const AI_PLATFORMS = {
     buttonPosition: 'above'
   },
   'gemini.google.com': {
-    selector: 'rich-textarea .ql-editor, .input-area, div[contenteditable="true"]',
+    selector: 'rich-textarea .ql-editor, .ql-editor[contenteditable="true"], .input-area, div[contenteditable="true"], [class*="query-input"]',
     buttonPosition: 'above'
   },
   'perplexity.ai': {
@@ -158,13 +158,21 @@ function findPromptContainer(inputElement) {
   } else if (hostname.includes('gemini.google.com')) {
     // Gemini: Look for the rich-textarea or parent container
     container = inputElement.closest('rich-textarea') ||
-                inputElement.closest('[class*="input"]') ||
+                inputElement.closest('.input-area-container') ||
+                inputElement.closest('[class*="message-input"]') ||
+                inputElement.closest('[class*="input-wrapper"]') ||
+                inputElement.closest('[class*="query-container"]') ||
+                inputElement.parentElement?.parentElement?.parentElement ||
                 inputElement.parentElement?.parentElement ||
                 inputElement;
   } else if (hostname.includes('perplexity.ai')) {
-    // Perplexity: Look for the textarea container
-    container = inputElement.closest('[class*="input"]') ||
+    // Perplexity: Look for the textarea container or search box
+    container = inputElement.closest('[class*="relative"]') ||
+                inputElement.closest('[class*="rounded-3xl"]')?.parentElement ||
+                inputElement.closest('[class*="textarea"]')?.parentElement ||
+                inputElement.closest('[class*="input"]') ||
                 inputElement.closest('[class*="search"]') ||
+                inputElement.parentElement?.parentElement ||
                 inputElement.parentElement ||
                 inputElement;
   }
@@ -175,12 +183,40 @@ function findPromptContainer(inputElement) {
   
   // If container is too small or same as input, try parent
   if (containerRect.width <= inputRect.width + 20) {
-    const parent = container.parentElement;
-    if (parent) {
+    let parent = container.parentElement;
+    let attempts = 0;
+    
+    // Try up to 5 parent levels to find a suitable container
+    while (parent && attempts < 5) {
       const parentRect = parent.getBoundingClientRect();
-      if (parentRect.width > containerRect.width && parentRect.width < window.innerWidth * 0.9) {
+      
+      // Check if this parent is a better container
+      if (parentRect.width > containerRect.width && 
+          parentRect.width < window.innerWidth * 0.9 &&
+          parentRect.width > inputRect.width + 40) {
         container = parent;
+        break;
       }
+      
+      parent = parent.parentElement;
+      attempts++;
+    }
+  }
+  
+  // For Gemini and Perplexity, do one more check for wider containers
+  if ((hostname.includes('gemini.google.com') || hostname.includes('perplexity.ai')) && 
+      container.getBoundingClientRect().width < 500) {
+    let widerParent = container.parentElement;
+    let attempts = 0;
+    
+    while (widerParent && attempts < 3) {
+      const widerRect = widerParent.getBoundingClientRect();
+      if (widerRect.width > 500 && widerRect.width < window.innerWidth * 0.8) {
+        container = widerParent;
+        break;
+      }
+      widerParent = widerParent.parentElement;
+      attempts++;
     }
   }
   
