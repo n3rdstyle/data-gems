@@ -19,10 +19,6 @@ const AI_PLATFORMS = {
     selector: 'rich-textarea .ql-editor, .input-area, div[contenteditable="true"]',
     buttonPosition: 'above'
   },
-  'poe.com': {
-    selector: 'textarea[placeholder*="Talk"], textarea.GrowingTextArea_textArea__ZWQbP, textarea[class*="TextArea"]',
-    buttonPosition: 'above'
-  },
   'perplexity.ai': {
     selector: 'textarea[placeholder*="Ask"], textarea[placeholder*="follow"], textarea[placeholder*="Follow"], div[contenteditable="true"], textarea.rounded-3xl',
     buttonPosition: 'above'
@@ -51,9 +47,9 @@ function createInjectButton() {
   button.innerHTML = `
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <line x1="12" y1="5" x2="12" y2="19"></line>
-      <polyline points="19 12 12 19 5 12"></polyline>
+      <line x1="5" y1="12" x2="19" y2="12"></line>
     </svg>
-    <span>Inject my profile</span>
+    <span>Attach my profile</span>
   `;
   
   // Add styles if not already added
@@ -204,9 +200,9 @@ function buildContextText(contextItems) {
   return text.trim();
 }
 
-// Inject profile into the input field
+// Attach profile as a file
 async function injectProfile(button) {
-  console.log('Injecting profile...');
+  console.log('Attaching profile...');
   button.classList.add('loading');
   button.querySelector('span').textContent = 'Loading';
   
@@ -221,73 +217,140 @@ async function injectProfile(button) {
       button.querySelector('span').textContent = 'No profile data';
       setTimeout(() => {
         button.classList.remove('loading');
-        button.querySelector('span').textContent = 'Inject Profile';
+        button.querySelector('span').textContent = 'Attach my profile';
       }, 2000);
       return;
     }
     
-    // Build context text
-    const contextText = buildContextText(contextItems);
+    // Create profile JSON
+    const profileData = {
+      version: "1.0",
+      timestamp: new Date().toISOString(),
+      categories: {},
+      totalItems: contextItems.length
+    };
     
-    // Find the input element - try multiple methods
-    let inputElement = findNearestInput(button);
+    // Group items by category
+    contextItems.forEach(item => {
+      if (!profileData.categories[item.category]) {
+        profileData.categories[item.category] = [];
+      }
+      profileData.categories[item.category].push({
+        question: item.question,
+        answer: item.answer
+      });
+    });
     
-    // If no input found with button proximity, try direct selection
-    if (!inputElement) {
-      const hostname = window.location.hostname;
-      const config = AI_PLATFORMS[hostname] || AI_PLATFORMS.default;
-      const inputs = document.querySelectorAll(config.selector);
+    // Create a blob and file
+    const jsonBlob = new Blob([JSON.stringify(profileData, null, 2)], { type: 'application/json' });
+    const file = new File([jsonBlob], 'my-profile.json', { type: 'application/json' });
+    
+    // Find file input based on platform
+    const hostname = window.location.hostname;
+    let fileInput = null;
+    let fileInputSelectors = [];
+    
+    // Platform-specific file input selectors
+    if (hostname.includes('chatgpt.com') || hostname.includes('chat.openai.com')) {
+      fileInputSelectors = ['input[type="file"]', 'input[accept*="text"]', 'input[accept*="json"]'];
+    } else if (hostname.includes('claude.ai')) {
+      fileInputSelectors = ['input[type="file"]', 'input[accept]'];
+    } else if (hostname.includes('gemini.google.com')) {
+      fileInputSelectors = ['input[type="file"]', 'input[accept]'];
+    } else if (hostname.includes('perplexity.ai')) {
+      fileInputSelectors = ['input[type="file"]', 'input[accept]'];
+    }
+    
+    // Try to find existing file input
+    for (const selector of fileInputSelectors) {
+      fileInput = document.querySelector(selector);
+      if (fileInput) break;
+    }
+    
+    // If no file input found, try to trigger file upload button click
+    if (!fileInput) {
+      console.log('No file input found, looking for upload button...');
       
-      for (const input of inputs) {
-        if (isValidInput(input)) {
-          inputElement = input;
+      // Common upload button selectors
+      const uploadButtonSelectors = [
+        'button[aria-label*="attach" i]',
+        'button[aria-label*="upload" i]',
+        'button[aria-label*="file" i]',
+        '[data-testid*="file" i]',
+        'button svg[class*="paperclip" i]',
+        'button svg[class*="attach" i]',
+        'button[title*="attach" i]',
+        'button[title*="upload" i]'
+      ];
+      
+      let uploadButton = null;
+      for (const selector of uploadButtonSelectors) {
+        uploadButton = document.querySelector(selector);
+        if (uploadButton) {
+          console.log('Found upload button:', uploadButton);
+          uploadButton.click();
+          
+          // Wait a bit for file input to appear
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Try to find file input again
+          for (const selector of fileInputSelectors) {
+            fileInput = document.querySelector(selector);
+            if (fileInput) break;
+          }
           break;
         }
       }
     }
     
-    if (!inputElement) {
-      console.error('No input element found');
+    if (!fileInput) {
+      console.error('No file input found');
       button.classList.remove('loading');
-      button.querySelector('span').textContent = 'No input found';
+      button.querySelector('span').textContent = 'No file input';
       setTimeout(() => {
-        button.querySelector('span').textContent = 'Inject Profile';
+        button.querySelector('span').textContent = 'Attach my profile';
       }, 2000);
       return;
     }
     
-    console.log('Found input element:', inputElement);
+    console.log('Found file input:', fileInput);
     
-    // Insert text using the existing insertion logic
-    const success = insertIntoElement(inputElement, contextText);
+    // Create a DataTransfer object and add our file
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
     
-    if (success) {
-      // Success feedback
-      button.querySelector('span').textContent = 'Injected!';
-      button.classList.add('success');
-      
-      setTimeout(() => {
-        // Hide the button after successful injection
-        button.style.display = 'none';
-        // Also remove from the injected buttons map so it can be recreated later
-        for (const [input, btn] of injectedButtons.entries()) {
-          if (btn === button) {
-            injectedButtons.delete(input);
-            break;
-          }
+    // Set the files on the input
+    fileInput.files = dataTransfer.files;
+    
+    // Trigger change and input events
+    const changeEvent = new Event('change', { bubbles: true });
+    const inputEvent = new Event('input', { bubbles: true });
+    fileInput.dispatchEvent(changeEvent);
+    fileInput.dispatchEvent(inputEvent);
+    
+    // Success feedback
+    button.querySelector('span').textContent = 'Attached!';
+    button.classList.add('success');
+    
+    setTimeout(() => {
+      // Hide the button after successful attachment
+      button.style.display = 'none';
+      // Also remove from the injected buttons map so it can be recreated later
+      for (const [input, btn] of injectedButtons.entries()) {
+        if (btn === button) {
+          injectedButtons.delete(input);
+          break;
         }
-      }, 1500);
-    } else {
-      throw new Error('Failed to insert text');
-    }
+      }
+    }, 1500);
     
   } catch (error) {
-    console.error('Error injecting profile:', error);
+    console.error('Error attaching profile:', error);
     button.classList.remove('loading');
     button.querySelector('span').textContent = 'Error';
     
     setTimeout(() => {
-      button.querySelector('span').textContent = 'Inject Profile';
+      button.querySelector('span').textContent = 'Attach my profile';
     }, 2000);
   }
 }
