@@ -2,6 +2,10 @@ console.log('Prompt Profile Injector: Content script loaded on', window.location
 
 // Configuration for different AI platforms
 const AI_PLATFORMS = {
+  'chatgpt.com': {
+    selector: 'textarea[placeholder*="Message"], textarea[data-id="root"], #prompt-textarea',
+    buttonPosition: 'above'
+  },
   'chat.openai.com': {
     selector: 'textarea[placeholder*="Message"], textarea[data-id="root"], #prompt-textarea',
     buttonPosition: 'above'
@@ -20,11 +24,11 @@ const AI_PLATFORMS = {
     buttonPosition: 'above'
   },
   'perplexity.ai': {
-    selector: 'textarea[placeholder*="Ask"], textarea[placeholder*="follow-up"]',
+    selector: 'textarea[placeholder*="Ask"], textarea[placeholder*="follow"], textarea[placeholder*="Follow"], div[contenteditable="true"], textarea.rounded-3xl',
     buttonPosition: 'above'
   },
   'www.perplexity.ai': {
-    selector: 'textarea[placeholder*="Ask"], textarea[placeholder*="Follow-up"]',
+    selector: 'textarea[placeholder*="Ask"], textarea[placeholder*="follow"], textarea[placeholder*="Follow"], div[contenteditable="true"], textarea.rounded-3xl',
     buttonPosition: 'above'
   },
   // Default selector for any other site with common input patterns
