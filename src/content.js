@@ -140,6 +140,8 @@ function findPromptContainer(inputElement) {
   const hostname = window.location.hostname;
   let container = inputElement;
   
+  console.log('Finding container for:', hostname, 'Input element:', inputElement);
+  
   // Platform-specific container detection
   if (hostname.includes('chatgpt.com') || hostname.includes('chat.openai.com')) {
     // ChatGPT: Look for the form or main container
@@ -156,25 +158,63 @@ function findPromptContainer(inputElement) {
                 inputElement.parentElement?.parentElement ||
                 inputElement;
   } else if (hostname.includes('gemini.google.com')) {
-    // Gemini: Look for the rich-textarea or parent container
-    container = inputElement.closest('rich-textarea') ||
-                inputElement.closest('.input-area-container') ||
-                inputElement.closest('[class*="message-input"]') ||
-                inputElement.closest('[class*="input-wrapper"]') ||
-                inputElement.closest('[class*="query-container"]') ||
-                inputElement.parentElement?.parentElement?.parentElement ||
-                inputElement.parentElement?.parentElement ||
-                inputElement;
+    // Gemini: Start from input and go up to find the widest reasonable container
+    let current = inputElement;
+    let bestContainer = inputElement;
+    let maxWidth = inputElement.getBoundingClientRect().width;
+    
+    // Go up the tree looking for wider containers
+    for (let i = 0; i < 10 && current.parentElement; i++) {
+      current = current.parentElement;
+      const rect = current.getBoundingClientRect();
+      
+      // Log each parent for debugging
+      console.log(`Gemini parent ${i}:`, current.className || current.tagName, 'width:', rect.width);
+      
+      if (rect.width > maxWidth && rect.width < window.innerWidth * 0.8) {
+        maxWidth = rect.width;
+        bestContainer = current;
+      }
+      
+      // Stop if we find a container that's reasonably wide
+      if (rect.width > 600 && rect.width < window.innerWidth * 0.8) {
+        container = current;
+        break;
+      }
+    }
+    
+    if (container === inputElement) {
+      container = bestContainer;
+    }
   } else if (hostname.includes('perplexity.ai')) {
-    // Perplexity: Look for the textarea container or search box
-    container = inputElement.closest('[class*="relative"]') ||
-                inputElement.closest('[class*="rounded-3xl"]')?.parentElement ||
-                inputElement.closest('[class*="textarea"]')?.parentElement ||
-                inputElement.closest('[class*="input"]') ||
-                inputElement.closest('[class*="search"]') ||
-                inputElement.parentElement?.parentElement ||
-                inputElement.parentElement ||
-                inputElement;
+    // Perplexity: Similar approach - find the widest reasonable container
+    let current = inputElement;
+    let bestContainer = inputElement;
+    let maxWidth = inputElement.getBoundingClientRect().width;
+    
+    // Go up the tree looking for wider containers
+    for (let i = 0; i < 10 && current.parentElement; i++) {
+      current = current.parentElement;
+      const rect = current.getBoundingClientRect();
+      
+      // Log each parent for debugging
+      console.log(`Perplexity parent ${i}:`, current.className || current.tagName, 'width:', rect.width);
+      
+      if (rect.width > maxWidth && rect.width < window.innerWidth * 0.8) {
+        maxWidth = rect.width;
+        bestContainer = current;
+      }
+      
+      // Stop if we find a container that's reasonably wide
+      if (rect.width > 500 && rect.width < window.innerWidth * 0.8) {
+        container = current;
+        break;
+      }
+    }
+    
+    if (container === inputElement) {
+      container = bestContainer;
+    }
   }
   
   // Verify we found a reasonable container
