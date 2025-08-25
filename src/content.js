@@ -534,17 +534,46 @@ async function injectProfile(button) {
     }
     
     if (!fileInput) {
-      console.log('No traditional file input found, trying drag-and-drop approach...');
+      console.log('No traditional file input found, trying alternative approaches...');
       
-      // Try drag-and-drop approach for platforms like Gemini
+      // Try multiple approaches for platforms like Gemini
       try {
-        // Find a suitable drop target
+        // Approach 1: Try to trigger Gemini's native file handler
+        if (hostname.includes('gemini.google.com')) {
+          console.log('Attempting Gemini-specific file handling...');
+          
+          // Look for Gemini's file upload zone more specifically
+          const fileUploadZones = document.querySelectorAll('[class*="drop"], [class*="upload"], [data-testid*="file"]');
+          console.log('Found file upload zones:', fileUploadZones);
+          
+          // Try to trigger native file selection
+          const fileEvent = new Event('change', { bubbles: true });
+          Object.defineProperty(fileEvent, 'target', {
+            writable: false,
+            value: { files: [file] }
+          });
+          
+          // Dispatch to various potential targets
+          for (const zone of fileUploadZones) {
+            zone.dispatchEvent(fileEvent);
+          }
+          
+          // Also try dispatching to the upload button
+          const uploadBtn = document.querySelector('button[aria-label*="upload" i]');
+          if (uploadBtn) {
+            uploadBtn.dispatchEvent(fileEvent);
+          }
+        }
+        
+        // Approach 2: Enhanced drag-and-drop approach
         let dropTarget = null;
         
         if (hostname.includes('gemini.google.com')) {
-          // Try various drop targets for Gemini
-          dropTarget = document.querySelector('.input-area') ||
+          // Try various drop targets for Gemini in order of preference
+          dropTarget = document.querySelector('[class*="input-area"][class*="drop"]') ||
+                      document.querySelector('.input-area') ||
                       document.querySelector('[class*="input-area"]') ||
+                      document.querySelector('[class*="upload-zone"]') ||
                       document.querySelector('.text-input-field') ||
                       document.querySelector('[contenteditable="true"]') ||
                       document.body;
@@ -553,11 +582,11 @@ async function injectProfile(button) {
         if (dropTarget) {
           console.log('Using drop target:', dropTarget);
           
-          // Create drag-and-drop events
+          // Create more realistic file for drag-and-drop
           const dataTransfer = new DataTransfer();
           dataTransfer.items.add(file);
           
-          // Create and dispatch drag events
+          // Create and dispatch drag events with proper event handling
           const dragEnterEvent = new DragEvent('dragenter', {
             bubbles: true,
             cancelable: true,
@@ -576,12 +605,53 @@ async function injectProfile(button) {
             dataTransfer: dataTransfer
           });
           
-          // Dispatch the events in sequence
+          // Prevent default handling to allow our custom drop
+          dropTarget.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }, { once: true });
+          
+          dropTarget.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }, { once: true });
+          
+          dropTarget.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Drop event intercepted:', e);
+          }, { once: true });
+          
+          // Dispatch the events in sequence with delays
           dropTarget.dispatchEvent(dragEnterEvent);
+          await new Promise(resolve => setTimeout(resolve, 100));
           dropTarget.dispatchEvent(dragOverEvent);
+          await new Promise(resolve => setTimeout(resolve, 100));
           dropTarget.dispatchEvent(dropEvent);
           
           console.log('Dispatched drag-and-drop events');
+          
+          // Approach 3: Try clipboard paste approach as final fallback
+          setTimeout(async () => {
+            console.log('Trying clipboard paste approach...');
+            try {
+              const clipboardData = new DataTransfer();
+              clipboardData.items.add(file);
+              
+              const pasteEvent = new ClipboardEvent('paste', {
+                bubbles: true,
+                cancelable: true,
+                clipboardData: clipboardData
+              });
+              
+              const focusElement = document.querySelector('[contenteditable="true"]') || dropTarget;
+              focusElement.focus();
+              focusElement.dispatchEvent(pasteEvent);
+              console.log('Dispatched paste event');
+            } catch (pasteError) {
+              console.log('Clipboard paste failed:', pasteError);
+            }
+          }, 500);
           
           // Success feedback
           button.querySelector('span').textContent = 'Attached!';
@@ -589,12 +659,10 @@ async function injectProfile(button) {
           
           setTimeout(() => {
             button.style.display = 'none';
-            // Remove from injected buttons map
-            for (const [input, btn] of injectedButtons) {
-              if (btn === button) {
-                injectedButtons.delete(input);
-                break;
-              }
+            // Find and remove from injected buttons map
+            const inputElement = document.querySelector('div[contenteditable="true"]');
+            if (inputElement && injectedButtons.has(inputElement)) {
+              injectedButtons.delete(inputElement);
             }
           }, 1500);
           
