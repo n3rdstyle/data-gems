@@ -135,9 +135,64 @@ function createInjectButton() {
   return button;
 }
 
+// Find the actual prompt container (not just the input element)
+function findPromptContainer(inputElement) {
+  const hostname = window.location.hostname;
+  let container = inputElement;
+  
+  // Platform-specific container detection
+  if (hostname.includes('chatgpt.com') || hostname.includes('chat.openai.com')) {
+    // ChatGPT: Look for the form or main container
+    container = inputElement.closest('form') || 
+                inputElement.closest('[class*="prompt"]') ||
+                inputElement.closest('[class*="input"]') ||
+                inputElement.parentElement?.parentElement ||
+                inputElement;
+  } else if (hostname.includes('claude.ai')) {
+    // Claude: Look for the fieldset or contenteditable container
+    container = inputElement.closest('fieldset') ||
+                inputElement.closest('[class*="composer"]') ||
+                inputElement.closest('[class*="input"]') ||
+                inputElement.parentElement?.parentElement ||
+                inputElement;
+  } else if (hostname.includes('gemini.google.com')) {
+    // Gemini: Look for the rich-textarea or parent container
+    container = inputElement.closest('rich-textarea') ||
+                inputElement.closest('[class*="input"]') ||
+                inputElement.parentElement?.parentElement ||
+                inputElement;
+  } else if (hostname.includes('perplexity.ai')) {
+    // Perplexity: Look for the textarea container
+    container = inputElement.closest('[class*="input"]') ||
+                inputElement.closest('[class*="search"]') ||
+                inputElement.parentElement ||
+                inputElement;
+  }
+  
+  // Verify we found a reasonable container
+  const containerRect = container.getBoundingClientRect();
+  const inputRect = inputElement.getBoundingClientRect();
+  
+  // If container is too small or same as input, try parent
+  if (containerRect.width <= inputRect.width + 20) {
+    const parent = container.parentElement;
+    if (parent) {
+      const parentRect = parent.getBoundingClientRect();
+      if (parentRect.width > containerRect.width && parentRect.width < window.innerWidth * 0.9) {
+        container = parent;
+      }
+    }
+  }
+  
+  console.log('Found container:', container, 'for input:', inputElement);
+  return container;
+}
+
 // Position the button relative to an input field
 function positionButton(button, inputElement) {
-  const rect = inputElement.getBoundingClientRect();
+  // Find the actual container to align with
+  const container = findPromptContainer(inputElement);
+  const rect = container.getBoundingClientRect();
   const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
   const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
   
@@ -146,7 +201,7 @@ function positionButton(button, inputElement) {
   const buttonHeight = 36; // Approximate button height
   const spacing = 12; // Spacing from input field
   
-  // Calculate position - align with right edge of input field
+  // Calculate position - align with right edge of container
   button.style.position = 'absolute';
   button.style.top = `${rect.top + scrollTop - buttonHeight - spacing}px`;
   button.style.left = `${rect.right + scrollLeft - buttonWidth}px`;
@@ -177,13 +232,15 @@ function positionButton(button, inputElement) {
     position: button.style.position,
     top: button.style.top,
     left: button.style.left,
-    inputRect: {
+    containerRect: {
       top: rect.top,
       right: rect.right,
       bottom: rect.bottom,
       left: rect.left,
       width: rect.width
-    }
+    },
+    inputElement: inputElement.tagName,
+    container: container.tagName
   });
 }
 
