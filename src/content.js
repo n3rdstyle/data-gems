@@ -290,7 +290,7 @@ function positionButton(button, inputElement) {
   // Platform-specific spacing adjustments
   const hostname = window.location.hostname;
   if (hostname.includes('gemini.google.com')) {
-    spacing = 12; // Extra spacing for Gemini to clear the input field border
+    spacing = 16; // Extra spacing for Gemini to clear the input field border (was 12, now 16)
   }
   
   // Calculate position - align with right edge of container
