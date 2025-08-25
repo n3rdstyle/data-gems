@@ -187,28 +187,32 @@ function findPromptContainer(inputElement) {
       container = bestContainer;
     }
   } else if (hostname.includes('perplexity.ai')) {
-    // Perplexity: Similar approach - find the widest reasonable container
+    // Perplexity: Look for the rounded border container (the visual search box)
     let current = inputElement;
     let bestContainer = inputElement;
-    let maxWidth = inputElement.getBoundingClientRect().width;
     
-    // Go up the tree looking for wider containers
+    // Go up the tree looking for the container with rounded borders
     for (let i = 0; i < 10 && current.parentElement; i++) {
       current = current.parentElement;
       const rect = current.getBoundingClientRect();
+      const classes = current.className || '';
       
       // Log each parent for debugging
-      console.log(`Perplexity parent ${i}:`, current.className || current.tagName, 'width:', rect.width);
+      console.log(`Perplexity parent ${i}:`, classes || current.tagName, 'width:', rect.width);
       
-      if (rect.width > maxWidth && rect.width < window.innerWidth * 0.8) {
-        maxWidth = rect.width;
-        bestContainer = current;
-      }
-      
-      // Stop if we find a container that's reasonably wide
-      if (rect.width > 500 && rect.width < window.innerWidth * 0.8) {
+      // Look for the container with rounded borders (the visual search box)
+      if (classes.includes('rounded') && classes.includes('border')) {
+        console.log('Found rounded border container at parent', i);
         container = current;
         break;
+      }
+      
+      // Also stop if we find a reasonably wide container
+      if (rect.width > 500 && rect.width < window.innerWidth * 0.8) {
+        bestContainer = current;
+        if (!container || container === inputElement) {
+          container = current;
+        }
       }
     }
     
