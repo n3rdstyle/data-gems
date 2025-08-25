@@ -141,24 +141,37 @@ function positionButton(button, inputElement) {
   const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
   const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
   
-  // Always position above the prompt field, aligned with the right edge
+  // Get button dimensions
+  const buttonWidth = 160; // Approximate button width
+  const buttonHeight = 36; // Approximate button height
+  const spacing = 12; // Spacing from input field
+  
+  // Calculate position - align with right edge of input field
   button.style.position = 'absolute';
-  button.style.top = `${rect.top + scrollTop - 52}px`; // 16px spacing + ~36px button height
-  button.style.left = `${rect.right + scrollLeft - 130}px`; // Align with right edge, adjust for button width
+  button.style.top = `${rect.top + scrollTop - buttonHeight - spacing}px`;
+  button.style.left = `${rect.right + scrollLeft - buttonWidth}px`;
   button.style.right = 'auto';
   button.style.bottom = 'auto';
   
-  // Ensure button doesn't go off-screen
-  const buttonRect = button.getBoundingClientRect();
-  if (buttonRect.right > window.innerWidth - 10) {
-    button.style.left = `${window.innerWidth - 140}px`;
-  }
-  if (buttonRect.left < 10) {
-    button.style.left = '10px';
-  }
-  if (buttonRect.top < 10) {
-    button.style.top = `${rect.bottom + scrollTop + 16}px`; // 16px spacing below if no room above
-  }
+  // Ensure button stays within viewport
+  requestAnimationFrame(() => {
+    const buttonRect = button.getBoundingClientRect();
+    
+    // Adjust if button goes off right edge
+    if (buttonRect.right > window.innerWidth - 10) {
+      button.style.left = `${window.innerWidth - buttonWidth - 10}px`;
+    }
+    
+    // Adjust if button goes off left edge
+    if (buttonRect.left < 10) {
+      button.style.left = '10px';
+    }
+    
+    // If no room above, position below
+    if (buttonRect.top < 10) {
+      button.style.top = `${rect.bottom + scrollTop + spacing}px`;
+    }
+  });
   
   console.log('Positioned button at:', {
     position: button.style.position,
@@ -168,7 +181,8 @@ function positionButton(button, inputElement) {
       top: rect.top,
       right: rect.right,
       bottom: rect.bottom,
-      left: rect.left
+      left: rect.left,
+      width: rect.width
     }
   });
 }
@@ -430,7 +444,11 @@ function addInjectButtons() {
     buttonAdded = true;
     
     // Reposition on window resize/scroll
-    const reposition = () => positionButton(button, input);
+    const reposition = () => {
+      if (document.body.contains(button) && document.body.contains(input)) {
+        positionButton(button, input);
+      }
+    };
     window.addEventListener('resize', reposition);
     window.addEventListener('scroll', reposition);
     
@@ -438,6 +456,23 @@ function addInjectButtons() {
     input.addEventListener('focus', () => {
       setTimeout(() => positionButton(button, input), 100);
     });
+    
+    // Watch for parent container changes (especially for dynamic layouts)
+    const observer = new MutationObserver(() => {
+      if (document.body.contains(button) && document.body.contains(input)) {
+        requestAnimationFrame(() => positionButton(button, input));
+      }
+    });
+    
+    // Observe the input's parent for size/position changes
+    if (input.parentElement) {
+      observer.observe(input.parentElement, {
+        attributes: true,
+        attributeFilter: ['style', 'class'],
+        childList: false,
+        subtree: false
+      });
+    }
     
     // Hide button when input is cleared or when user starts typing after injection
     input.addEventListener('input', () => {
