@@ -479,10 +479,48 @@ async function injectProfile(button) {
           let attempts = 0;
           while (!fileInput && attempts < 5) {
             await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // First try our specific selectors
             for (const selector of fileInputSelectors) {
               fileInput = document.querySelector(selector);
               if (fileInput) break;
             }
+            
+            // If not found, search all file inputs on the page and in shadow DOM
+            if (!fileInput) {
+              const allFileInputs = document.querySelectorAll('input[type="file"]');
+              console.log(`Found ${allFileInputs.length} file inputs on page:`, allFileInputs);
+              
+              // Also check for shadow DOM inputs
+              const shadowHosts = document.querySelectorAll('*');
+              for (const host of shadowHosts) {
+                if (host.shadowRoot) {
+                  const shadowFileInputs = host.shadowRoot.querySelectorAll('input[type="file"]');
+                  if (shadowFileInputs.length > 0) {
+                    console.log(`Found ${shadowFileInputs.length} file inputs in shadow DOM of:`, host);
+                    allFileInputs.push(...shadowFileInputs);
+                  }
+                }
+              }
+              
+              for (const input of allFileInputs) {
+                // Check if the input is visible or recently added
+                const rect = input.getBoundingClientRect();
+                const isVisible = rect.width > 0 && rect.height > 0;
+                const computedStyle = window.getComputedStyle(input);
+                const isDisplayed = computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden';
+                
+                console.log('File input:', input, 'visible:', isVisible, 'displayed:', isDisplayed, 'style:', input.style.cssText, 'computed:', computedStyle.display);
+                
+                // Take any file input that's not explicitly hidden
+                if (!fileInput && (isVisible || isDisplayed || input.offsetParent !== null)) {
+                  fileInput = input;
+                  console.log('Selected file input:', input);
+                  break;
+                }
+              }
+            }
+            
             attempts++;
             console.log(`File input search attempt ${attempts}, found:`, !!fileInput);
           }
