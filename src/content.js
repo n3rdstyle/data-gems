@@ -419,7 +419,15 @@ async function injectProfile(button) {
     } else if (hostname.includes('claude.ai')) {
       fileInputSelectors = ['input[type="file"]', 'input[accept]'];
     } else if (hostname.includes('gemini.google.com')) {
-      fileInputSelectors = ['input[type="file"]', 'input[accept]'];
+      fileInputSelectors = [
+        'input[type="file"]', 
+        'input[accept]',
+        'input[accept*="application"]',
+        'input[accept*="text"]',
+        'input[accept*="json"]',
+        'input.file-upload-input',
+        '[class*="file"] input[type="file"]'
+      ];
     } else if (hostname.includes('perplexity.ai')) {
       fileInputSelectors = ['input[type="file"]', 'input[accept]'];
     }
@@ -435,7 +443,7 @@ async function injectProfile(button) {
       console.log('No file input found, looking for upload button...');
       
       // Common upload button selectors
-      const uploadButtonSelectors = [
+      let uploadButtonSelectors = [
         'button[aria-label*="attach" i]',
         'button[aria-label*="upload" i]',
         'button[aria-label*="file" i]',
@@ -446,6 +454,17 @@ async function injectProfile(button) {
         'button[title*="upload" i]'
       ];
       
+      // Platform-specific upload button selectors
+      if (hostname.includes('gemini.google.com')) {
+        uploadButtonSelectors = [
+          'button[aria-label*="upload" i]',
+          'button.upload-card-button',
+          'button[class*="upload"]',
+          'button mat-icon-button[aria-label*="upload" i]',
+          ...uploadButtonSelectors
+        ];
+      }
+      
       let uploadButton = null;
       for (const selector of uploadButtonSelectors) {
         uploadButton = document.querySelector(selector);
@@ -453,13 +472,23 @@ async function injectProfile(button) {
           console.log('Found upload button:', uploadButton);
           uploadButton.click();
           
-          // Wait a bit for file input to appear
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Wait longer for file input to appear (Gemini needs more time)
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
-          // Try to find file input again
-          for (const selector of fileInputSelectors) {
-            fileInput = document.querySelector(selector);
-            if (fileInput) break;
+          // Try multiple times to find the file input
+          let attempts = 0;
+          while (!fileInput && attempts < 5) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+            for (const selector of fileInputSelectors) {
+              fileInput = document.querySelector(selector);
+              if (fileInput) break;
+            }
+            attempts++;
+            console.log(`File input search attempt ${attempts}, found:`, !!fileInput);
+          }
+          
+          if (fileInput) {
+            console.log('Found file input after', attempts, 'attempts');
           }
           break;
         }
