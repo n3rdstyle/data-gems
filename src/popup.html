@@ -13,25 +13,32 @@
         <div class="header-content">
           <div class="header-top">
             <div class="profile-section">
-              <div class="profile-avatar">D</div>
+              <div class="profile-avatar">
+                <span class="avatar-letter">D</span>
+                <div class="avatar-status"></div>
+              </div>
               <div class="profile-info">
                 <h1>Dennis</h1>
-                <p id="itemCount">No personal info stored</p>
               </div>
             </div>
             <div class="header-actions">
-              <button id="importBtn" class="icon-button" title="Import">
+              <button id="importBtn" class="icon-button" data-tooltip="Import">
                 <svg class="icon" viewBox="0 0 24 24">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
               </button>
-              <button id="exportBtn" class="icon-button" title="Export">
+              <button id="exportBtn" class="icon-button" data-tooltip="Export">
                 <svg class="icon" viewBox="0 0 24 24">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="17 8 12 3 7 8"></polyline>
                   <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              </button>
+              <button id="settingsBtn" class="icon-button" data-tooltip="Settings">
+                <svg class="icon" viewBox="0 0 24 24">
+                  <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5a3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97c0-.33-.03-.65-.07-.97l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65A.488.488 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.97c0 .33.03.65.07.97l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.13-.22.07-.49-.12-.64l-2.11-1.65Z"></path>
                 </svg>
               </button>
             </div>
@@ -41,7 +48,7 @@
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.35-4.35"></path>
             </svg>
-            <input type="text" id="searchInput" class="search-input" placeholder="Search your personal infos">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search your personal info">
           </div>
         </div>
       </div>
@@ -82,25 +89,18 @@
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Question/Context</label>
-            <input type="text" id="questionInput" class="form-input" placeholder="e.g., What's my favorite type of music?">
+            <label class="form-label">Topic</label>
+            <input type="text" id="questionInput" class="form-input" placeholder="e.g., Favorite type of music">
           </div>
           <div class="form-group">
-            <label class="form-label">Answer</label>
+            <label class="form-label">Details</label>
             <textarea id="answerInput" class="form-textarea" placeholder="e.g., I love jazz and classical music, especially Miles Davis and Bach"></textarea>
           </div>
           <div class="form-actions">
-            <button type="submit" class="button button-primary" style="flex: 1;">
-              <svg class="icon" viewBox="0 0 24 24">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
+            <button type="submit" class="button button-primary">
               <span id="saveButtonText">Save</span>
             </button>
             <button type="button" id="cancelBtn" class="button button-outline">
-              <svg class="icon" viewBox="0 0 24 24">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
               Cancel
             </button>
           </div>
@@ -112,21 +112,20 @@
         <!-- Empty State -->
         <div id="emptyState" class="empty-state">
           <div class="empty-icon-container">
-            <div class="gradient-blob"></div>
             <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              <path d="M9 11H3v10h6V11zM21 11h-6v10h6V11zM15 3H9v6h6V3z"/>
             </svg>
           </div>
-          <div>
-            <h3 id="emptyTitle">Ready to personalize your AI?</h3>
-            <p id="emptyDescription">Add your personal info to your profile and help your AI understand you better. No worries, your data stays private and local.</p>
+          <div class="empty-text">
+            <h3 id="emptyTitle" class="empty-title">Start building your profile</h3>
+            <p id="emptyDescription" class="empty-description">Add personal context to help AI assistants understand you better. Your data stays private and local.</p>
           </div>
-          <button id="firstAddBtn" class="button button-primary">
+          <button id="firstAddBtn" class="button button-gradient">
             <svg class="icon" viewBox="0 0 24 24">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            Add your first info
+            Add new information
           </button>
         </div>
 
@@ -138,12 +137,12 @@
 
       <!-- Footer Add Button (hidden by default) -->
       <div id="footer" class="footer" style="display: none;">
-        <button id="addBtn" class="button button-primary button-full">
+        <button id="addBtn" class="button button-gradient button-full">
           <svg class="icon" viewBox="0 0 24 24">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          Add Context
+          Add new information
         </button>
       </div>
     </div>

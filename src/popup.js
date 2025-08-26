@@ -89,11 +89,7 @@ function filterItems() {
 
 // Update UI based on state
 function updateUI() {
-  // Update item count
-  const count = contextItems.length;
-  elements.itemCount.textContent = count === 0 
-    ? 'No personal info stored' 
-    : `${count} personal info item${count === 1 ? '' : 's'} stored`;
+  // Item count display removed per design requirements
   
   // Show/hide form section
   elements.formSection.style.display = (isAddingItem || editingItem) ? 'block' : 'none';
