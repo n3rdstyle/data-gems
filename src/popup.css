@@ -907,6 +907,27 @@ button:focus-visible {
 .button.favorited svg {
   fill: currentColor;
 }
+
+.button-save {
+  background: var(--foreground) !important;
+  color: var(--background) !important;
+  border-color: var(--foreground) !important;
+}
+
+.button-save:hover {
+  background: var(--muted-foreground) !important;
+  border-color: var(--muted-foreground) !important;
+}
+
+#favoriteBtn {
+  display: none;
+}
+
+#favoriteBtn:hover {
+  background: var(--foreground) !important;
+  color: var(--background) !important;
+  border-color: var(--foreground) !important;
+}
 .elevate {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
