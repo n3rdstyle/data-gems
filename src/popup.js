@@ -58,6 +58,25 @@ async function loadItems() {
           createdAt: new Date(item.createdAt),
           updatedAt: new Date(item.updatedAt)
         }));
+        
+        // Remove duplicates from existing data
+        const uniqueItems = [];
+        const seen = new Set();
+        
+        for (const item of contextItems) {
+          const itemKey = `${item.category}:${item.question}:${item.answer}`;
+          if (!seen.has(itemKey)) {
+            seen.add(itemKey);
+            uniqueItems.push(item);
+          }
+        }
+        
+        // If duplicates were found, update the storage
+        if (uniqueItems.length < contextItems.length) {
+          contextItems = uniqueItems;
+          saveItems();
+          console.log(`Removed ${result.contextItems.length - uniqueItems.length} duplicate items`);
+        }
       } else {
         contextItems = [];
       }
@@ -331,21 +350,73 @@ function handleImport() {
       reader.onload = (e) => {
         try {
           const imported = JSON.parse(e.target.result);
+          let itemsToImport = [];
+          
+          // Handle array format (original format)
           if (Array.isArray(imported)) {
-            const itemsWithDates = imported.map(item => ({
+            itemsToImport = imported.map(item => ({
               ...item,
               id: item.id || generateId(),
               createdAt: new Date(item.createdAt || Date.now()),
               updatedAt: new Date(item.updatedAt || Date.now())
             }));
-            contextItems = [...itemsWithDates, ...contextItems];
-            saveItems();
-            filterItems();
-            updateUI();
-            showNotification(`Imported ${imported.length} context items!`);
+          }
+          // Handle categorized format (profile_json.json format)
+          else if (imported.categories && typeof imported.categories === 'object') {
+            // Convert categorized format to flat array
+            for (const [category, items] of Object.entries(imported.categories)) {
+              if (Array.isArray(items)) {
+                const categoryItems = items.map(item => ({
+                  id: generateId(),
+                  category: category,
+                  question: item.question || '',
+                  answer: item.answer || '',
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                }));
+                itemsToImport.push(...categoryItems);
+              }
+            }
+          }
+          // Handle single object that might be a profile
+          else if (imported && typeof imported === 'object') {
+            // Try to extract meaningful data from other formats
+            showNotification('Unrecognized format. Please use the correct JSON format.', 'error');
+            return;
+          }
+          
+          if (itemsToImport.length > 0) {
+            // Check for duplicates and only add new items
+            const existingSet = new Set(
+              contextItems.map(item => `${item.category}:${item.question}:${item.answer}`)
+            );
+            
+            const newItems = itemsToImport.filter(item => {
+              const itemKey = `${item.category}:${item.question}:${item.answer}`;
+              return !existingSet.has(itemKey);
+            });
+            
+            if (newItems.length > 0) {
+              contextItems = [...newItems, ...contextItems];
+              saveItems();
+              filterItems();
+              updateUI();
+              
+              const skippedCount = itemsToImport.length - newItems.length;
+              if (skippedCount > 0) {
+                showNotification(`Imported ${newItems.length} new items (${skippedCount} duplicates skipped)`);
+              } else {
+                showNotification(`Imported ${newItems.length} context items!`);
+              }
+            } else {
+              showNotification('All items already exist. No new items imported.', 'info');
+            }
+          } else {
+            showNotification('No valid items found in the imported file.', 'error');
           }
         } catch (error) {
           showNotification('Failed to import file. Please check the format.', 'error');
+          console.error('Import error:', error);
         }
       };
       reader.readAsText(file);

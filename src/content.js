@@ -750,14 +750,8 @@ function addInjectButtons() {
   
   console.log('Looking for inputs on', hostname, 'with selector:', config.selector);
   
-  // For Claude.ai, check if we're in a conversation already
-  if (hostname === 'claude.ai') {
-    const messages = document.querySelectorAll('[data-testid*="message"], .message, [role="article"]');
-    if (messages.length > 0) {
-      console.log('Already in conversation, not adding inject button');
-      return;
-    }
-  }
+  // Remove the check that prevents button in existing conversations
+  // We want to show the button even in ongoing chats
   
   const inputs = document.querySelectorAll(config.selector);
   console.log('Found', inputs.length, 'potential input elements');
@@ -868,16 +862,8 @@ function cleanupButtons() {
       }
     }
     
-    // For Claude.ai, also check if we're in a conversation state (messages exist)
-    if (hostname === 'claude.ai') {
-      const messages = document.querySelectorAll('[data-testid*="message"], .message, [role="article"]');
-      if (messages.length > 0) {
-        // If there are messages visible, hide the button
-        console.log('Messages detected, hiding inject button');
-        button.style.display = 'none';
-        return;
-      }
-    }
+    // Remove the check that hides button when messages exist
+    // We want the button visible even in ongoing conversations
     
     if (!hasValidInput) {
       console.log('Removing orphaned button');
