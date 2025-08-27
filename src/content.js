@@ -73,15 +73,15 @@ function createInjectButton() {
         font-weight: 500;
         cursor: pointer;
         z-index: 99999;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        box-shadow: none !important;
         transition: all 0.2s ease;
         white-space: nowrap;
       }
       
       .prompt-profile-inject-btn:hover {
         transform: translateY(-1px);
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
         background: linear-gradient(135deg, #ec5a92 0%, #f58874 25%, #faae66 50%, #fdc46d 75%, #ffd89e 100%);
+        box-shadow: none !important;
       }
       
       .prompt-profile-inject-btn:active {
@@ -117,7 +117,7 @@ function createInjectButton() {
       /* Adjust for dark mode sites */
       @media (prefers-color-scheme: dark) {
         .prompt-profile-inject-btn {
-          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.6);
+          /* No special shadow for dark mode */
         }
       }
     `;

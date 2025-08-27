@@ -5,6 +5,7 @@ let selectedCategory = null;
 let searchQuery = '';
 let editingItem = null;
 let isAddingItem = false;
+let currentEditingItem = null;
 
 // DOM Elements
 const elements = {
@@ -13,6 +14,26 @@ const elements = {
   searchInput: document.getElementById('searchInput'),
   importBtn: document.getElementById('importBtn'),
   exportBtn: document.getElementById('exportBtn'),
+  profileAvatar: document.querySelector('.profile-avatar'),
+  
+  // Profile Modal
+  profileModal: document.getElementById('profileModal'),
+  closeModal: document.getElementById('closeModal'),
+  profileImageInput: document.getElementById('profileImageInput'),
+  uploadImageBtn: document.getElementById('uploadImageBtn'),
+  removeImageBtn: document.getElementById('removeImageBtn'),
+  privacyLink: document.getElementById('privacyLink'),
+  
+  // Edit Modal
+  editModal: document.getElementById('editModal'),
+  closeEditModal: document.getElementById('closeEditModal'),
+  editItemForm: document.getElementById('editItemForm'),
+  editCategory: document.getElementById('editCategory'),
+  editQuestion: document.getElementById('editQuestion'),
+  editAnswer: document.getElementById('editAnswer'),
+  favoriteBtn: document.getElementById('favoriteBtn'),
+  deleteItemBtn: document.getElementById('deleteItemBtn'),
+  saveEditBtn: document.getElementById('saveEditBtn'),
   
   // Category Filter
   categoryFilter: document.getElementById('categoryFilter'),
@@ -103,7 +124,7 @@ function filterItems() {
       item.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.category.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
-  });
+  }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort by creation date, newest first
 }
 
 // Update UI based on state
@@ -191,9 +212,15 @@ function createCategoryChip(value, label, count) {
   `;
   
   chip.addEventListener('click', () => {
-    selectedCategory = value;
+    // If clicking the already selected category, deselect it (go back to All)
+    if (selectedCategory === value) {
+      selectedCategory = null;
+    } else {
+      selectedCategory = value;
+    }
     filterItems();
     updateUI();
+    centerSelectedCategory();
   });
   
   return chip;
@@ -209,36 +236,78 @@ function renderItems() {
   });
 }
 
+// Get category icon and color
+function getCategoryIcon(category) {
+  const iconMap = {
+    'Hobbies': {
+      color: '#04214E',
+      icon: '🎯'
+    },
+    'Food & Drink': {
+      color: '#04214E',
+      icon: '🍽️'
+    },
+    'Entertainment & Media': {
+      color: '#04214E',
+      icon: '🎬'
+    },
+    'Travel & Activities': {
+      color: '#04214E',
+      icon: '✈️'
+    },
+    'Lifestyle & Preferences': {
+      color: '#04214E',
+      icon: '💜'
+    },
+    'Work & Professional': {
+      color: '#04214E',
+      icon: '💼'
+    },
+    'Technology & Communication': {
+      color: '#04214E',
+      icon: '📱'
+    },
+    'Transportation': {
+      color: '#04214E',
+      icon: '🚗'
+    },
+    'Social & Personal': {
+      color: '#04214E',
+      icon: '👥'
+    },
+    'Weather & Environment': {
+      color: '#04214E',
+      icon: '☀️'
+    }
+  };
+  
+  return iconMap[category] || {
+    color: '#9E9E9E',
+    icon: '❓'
+  };
+}
+
 // Create context card element
 function createContextCard(item) {
   const card = document.createElement('div');
   card.className = 'context-card';
   
   card.innerHTML = `
-    <div class="context-card-header">
-      <span class="context-category">${item.category}</span>
-      <div class="context-actions">
-        <button class="edit-btn" data-id="${item.id}" title="Edit">
-          <svg class="icon" viewBox="0 0 24 24">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-          </svg>
-        </button>
-        <button class="delete-btn" data-id="${item.id}" title="Delete">
-          <svg class="icon" viewBox="0 0 24 24">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
-        </button>
+    <div class="context-content">
+      <div class="context-icon" style="background-color: ${getCategoryIcon(item.category).color}20">
+        ${getCategoryIcon(item.category).icon}
+      </div>
+      <div class="context-text">
+        <div class="context-question">${escapeHtml(item.question)}</div>
+        <div class="context-answer">${escapeHtml(item.answer)}</div>
       </div>
     </div>
-    <div class="context-question">${escapeHtml(item.question)}</div>
-    <div class="context-answer">${escapeHtml(item.answer)}</div>
   `;
   
   // Add event listeners
-  card.querySelector('.edit-btn').addEventListener('click', () => handleEdit(item));
-  card.querySelector('.delete-btn').addEventListener('click', () => handleDelete(item.id));
+  card.addEventListener('click', () => {
+    openEditModal(item);
+  });
   
   return card;
 }
@@ -439,6 +508,34 @@ function setupEventListeners() {
   elements.importBtn.addEventListener('click', handleImport);
   elements.exportBtn.addEventListener('click', handleExport);
   
+  // Profile Modal
+  elements.profileAvatar.addEventListener('click', openProfileModal);
+  elements.closeModal.addEventListener('click', closeProfileModal);
+  elements.uploadImageBtn.addEventListener('click', () => elements.profileImageInput.click());
+  elements.profileImageInput.addEventListener('change', handleImageUpload);
+  elements.removeImageBtn.addEventListener('click', removeProfileImage);
+  elements.privacyLink.addEventListener('click', openPrivacyStatement);
+  
+  // Close modal on outside click
+  elements.profileModal.addEventListener('click', (e) => {
+    if (e.target === elements.profileModal) {
+      closeProfileModal();
+    }
+  });
+  
+  // Edit Modal
+  elements.closeEditModal.addEventListener('click', closeEditModal);
+  elements.saveEditBtn.addEventListener('click', saveEditedItem);
+  elements.favoriteBtn.addEventListener('click', toggleFavorite);
+  elements.deleteItemBtn.addEventListener('click', deleteCurrentItem);
+  
+  // Close edit modal on outside click
+  elements.editModal.addEventListener('click', (e) => {
+    if (e.target === elements.editModal) {
+      closeEditModal();
+    }
+  });
+  
   // Add buttons
   elements.firstAddBtn.addEventListener('click', () => {
     isAddingItem = true;
@@ -541,6 +638,214 @@ function buildContextText() {
   
   return text;
 }
+
+// Profile Modal Functions
+function openProfileModal() {
+  elements.profileModal.style.display = 'flex';
+  loadProfileImage();
+}
+
+function closeProfileModal() {
+  elements.profileModal.style.display = 'none';
+}
+
+function handleImageUpload(e) {
+  const file = e.target.files?.[0];
+  if (file && file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const imageData = e.target.result;
+      // Store image in localStorage
+      chrome.storage.local.set({ profileImage: imageData }, () => {
+        updateProfileImage(imageData);
+        showNotification('Profile image updated!');
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function removeProfileImage() {
+  chrome.storage.local.remove('profileImage', () => {
+    updateProfileImage(null);
+    showNotification('Profile image removed');
+  });
+}
+
+function updateProfileImage(imageData) {
+  const avatars = document.querySelectorAll('.profile-avatar .avatar-letter, .current-avatar .avatar-letter');
+  avatars.forEach(avatar => {
+    if (imageData) {
+      avatar.parentElement.style.backgroundImage = `url(${imageData})`;
+      avatar.parentElement.style.backgroundSize = 'cover';
+      avatar.parentElement.style.backgroundPosition = 'center';
+      avatar.style.display = 'none';
+    } else {
+      avatar.parentElement.style.backgroundImage = '';
+      avatar.style.display = 'flex';
+    }
+  });
+}
+
+function loadProfileImage() {
+  chrome.storage.local.get(['profileImage'], (result) => {
+    if (result.profileImage) {
+      updateProfileImage(result.profileImage);
+    }
+  });
+}
+
+function openPrivacyStatement(e) {
+  e.preventDefault();
+  // Open the privacy statement in a new tab
+  chrome.tabs.create({ 
+    url: 'https://github.com/n3rdstyle/data-gems/blob/main/PRIVACY.md' 
+  });
+}
+
+// Edit Modal Functions
+function openEditModal(item) {
+  currentEditingItem = item;
+  
+  // Populate form fields
+  elements.editCategory.value = item.category;
+  elements.editQuestion.value = item.question;
+  elements.editAnswer.value = item.answer;
+  
+  // Update favorite button state
+  updateFavoriteButton(item.isFavorite || false);
+  
+  // Show modal
+  elements.editModal.style.display = 'flex';
+}
+
+function closeEditModal() {
+  elements.editModal.style.display = 'none';
+  currentEditingItem = null;
+  elements.editItemForm.reset();
+}
+
+function updateFavoriteButton(isFavorite) {
+  if (isFavorite) {
+    elements.favoriteBtn.classList.add('favorited');
+    elements.favoriteBtn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+      </svg>
+      Favorited
+    `;
+  } else {
+    elements.favoriteBtn.classList.remove('favorited');
+    elements.favoriteBtn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+      </svg>
+      Favorite
+    `;
+  }
+}
+
+function toggleFavorite() {
+  if (!currentEditingItem) return;
+  
+  const newFavoriteState = !currentEditingItem.isFavorite;
+  currentEditingItem.isFavorite = newFavoriteState;
+  
+  // Update the item in contextItems array
+  const itemIndex = contextItems.findIndex(item => item.id === currentEditingItem.id);
+  if (itemIndex !== -1) {
+    contextItems[itemIndex].isFavorite = newFavoriteState;
+    saveItems();
+  }
+  
+  updateFavoriteButton(newFavoriteState);
+  showNotification(newFavoriteState ? 'Added to favorites!' : 'Removed from favorites');
+}
+
+function deleteCurrentItem() {
+  if (!currentEditingItem) return;
+  
+  if (confirm('Are you sure you want to delete this item?')) {
+    const itemIndex = contextItems.findIndex(item => item.id === currentEditingItem.id);
+    if (itemIndex !== -1) {
+      contextItems.splice(itemIndex, 1);
+      saveItems();
+      filterItems();
+      updateUI();
+      closeEditModal();
+      showNotification('Item deleted successfully');
+    }
+  }
+}
+
+function saveEditedItem() {
+  if (!currentEditingItem) return;
+  
+  // Validate form
+  if (!elements.editCategory.value || !elements.editQuestion.value.trim() || !elements.editAnswer.value.trim()) {
+    showNotification('Please fill in all fields', 'error');
+    return;
+  }
+  
+  // Update the item
+  currentEditingItem.category = elements.editCategory.value;
+  currentEditingItem.question = elements.editQuestion.value.trim();
+  currentEditingItem.answer = elements.editAnswer.value.trim();
+  currentEditingItem.updatedAt = new Date();
+  
+  // Update in contextItems array
+  const itemIndex = contextItems.findIndex(item => item.id === currentEditingItem.id);
+  if (itemIndex !== -1) {
+    contextItems[itemIndex] = { ...currentEditingItem };
+    saveItems();
+    filterItems();
+    updateUI();
+    closeEditModal();
+    showNotification('Item updated successfully');
+  }
+}
+
+// Center selected category function
+function centerSelectedCategory() {
+  const categoryFilter = elements.categoryFilter;
+  const activeChip = categoryFilter.querySelector('.category-chip.active');
+  
+  if (!activeChip) {
+    // No active chip (All is selected), scroll to beginning
+    categoryFilter.scrollTo({
+      left: 0,
+      behavior: 'smooth'
+    });
+    return;
+  }
+  
+  // If "All" is selected, keep it on the left
+  if (selectedCategory === null) {
+    categoryFilter.scrollTo({
+      left: 0,
+      behavior: 'smooth'
+    });
+    return;
+  }
+  
+  // Calculate the position to center the active chip
+  const containerWidth = categoryFilter.offsetWidth;
+  const chipLeft = activeChip.offsetLeft;
+  const chipWidth = activeChip.offsetWidth;
+  const chipCenter = chipLeft + (chipWidth / 2);
+  
+  // Calculate scroll position to center the chip
+  const scrollLeft = chipCenter - (containerWidth / 2);
+  
+  // Smooth scroll to center the selected category
+  categoryFilter.scrollTo({
+    left: Math.max(0, scrollLeft),
+    behavior: 'smooth'
+  });
+}
+
+// Load profile image on startup
+loadProfileImage();
 
 // Add keyboard shortcut for quick insert (Ctrl/Cmd + Enter)
 document.addEventListener('keydown', (e) => {
