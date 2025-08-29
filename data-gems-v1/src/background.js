@@ -53,8 +53,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
         case 'IMPORT_ENCRYPTED': {
           if (!msg.blob || typeof msg.blob !== 'object') throw new Error('Invalid blob');
+          // Store the encrypted blob for future decryption
           await chrome.storage.local.set({ [PROFILE_STORAGE_KEY]: msg.blob });
-          profile = msg.blob; // Update in-memory copy
+          // Don't update the in-memory profile with encrypted data
+          // Profile will be loaded and decrypted when needed
+          profile = null; // Clear cache to force reload
           sendResponse({ ok: true });
           break;
         }

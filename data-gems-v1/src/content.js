@@ -73,15 +73,15 @@ function createInjectButton() {
         font-weight: 500;
         cursor: pointer;
         z-index: 99999;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        box-shadow: none !important;
         transition: all 0.2s ease;
         white-space: nowrap;
       }
       
       .prompt-profile-inject-btn:hover {
         transform: translateY(-1px);
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
         background: linear-gradient(135deg, #ec5a92 0%, #f58874 25%, #faae66 50%, #fdc46d 75%, #ffd89e 100%);
+        box-shadow: none !important;
       }
       
       .prompt-profile-inject-btn:active {
@@ -117,7 +117,7 @@ function createInjectButton() {
       /* Adjust for dark mode sites */
       @media (prefers-color-scheme: dark) {
         .prompt-profile-inject-btn {
-          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.6);
+          /* No special shadow for dark mode */
         }
       }
     `;
@@ -750,14 +750,8 @@ function addInjectButtons() {
   
   console.log('Looking for inputs on', hostname, 'with selector:', config.selector);
   
-  // For Claude.ai, check if we're in a conversation already
-  if (hostname === 'claude.ai') {
-    const messages = document.querySelectorAll('[data-testid*="message"], .message, [role="article"]');
-    if (messages.length > 0) {
-      console.log('Already in conversation, not adding inject button');
-      return;
-    }
-  }
+  // Remove the check that prevents button in existing conversations
+  // We want to show the button even in ongoing chats
   
   const inputs = document.querySelectorAll(config.selector);
   console.log('Found', inputs.length, 'potential input elements');
@@ -868,16 +862,8 @@ function cleanupButtons() {
       }
     }
     
-    // For Claude.ai, also check if we're in a conversation state (messages exist)
-    if (hostname === 'claude.ai') {
-      const messages = document.querySelectorAll('[data-testid*="message"], .message, [role="article"]');
-      if (messages.length > 0) {
-        // If there are messages visible, hide the button
-        console.log('Messages detected, hiding inject button');
-        button.style.display = 'none';
-        return;
-      }
-    }
+    // Remove the check that hides button when messages exist
+    // We want the button visible even in ongoing conversations
     
     if (!hasValidInput) {
       console.log('Removing orphaned button');
