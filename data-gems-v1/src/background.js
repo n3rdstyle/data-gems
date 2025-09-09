@@ -1,7 +1,11 @@
 let profile = null;
+let subprofiles = [];
+let activeSubprofileId = null;
 let lastUsedTemplate = { kind: 'compact', selection: [] };
 
 const PROFILE_STORAGE_KEY = 'profile_data';
+const SUBPROFILES_STORAGE_KEY = 'subprofiles_data';
+const ACTIVE_SUBPROFILE_KEY = 'active_subprofile_id';
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({ id: 'insert_compact', title: 'Insert compact profile', contexts: ['editable'] });
@@ -42,7 +46,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
         case 'GENERATE_INSERTION': {
           if (!profile) profile = await loadProfileFromStorage();
-          const text = generateInsertionText(msg.selection ?? { kind: 'compact' }, profile);
+          if (!subprofiles.length) subprofiles = await loadSubprofilesFromStorage();
+          if (!activeSubprofileId) activeSubprofileId = await loadActiveSubprofileId();
+          
+          const effectiveProfile = activeSubprofileId 
+            ? await generateSubprofileData(profile, activeSubprofileId, subprofiles)
+            : profile;
+          const text = generateInsertionText(msg.selection ?? { kind: 'compact' }, effectiveProfile);
           sendResponse({ ok: true, text });
           break;
         }
@@ -61,6 +71,77 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           sendResponse({ ok: true });
           break;
         }
+        
+        // Subprofile management
+        case 'LOAD_SUBPROFILES': {
+          if (!subprofiles.length) subprofiles = await loadSubprofilesFromStorage();
+          sendResponse({ ok: true, subprofiles });
+          break;
+        }
+        case 'SAVE_SUBPROFILE': {
+          const { subprofile } = msg;
+          if (!subprofile || !subprofile.id) throw new Error('Invalid subprofile');
+          
+          const existingIndex = subprofiles.findIndex(s => s.id === subprofile.id);
+          if (existingIndex >= 0) {
+            subprofiles[existingIndex] = subprofile;
+          } else {
+            subprofiles.push(subprofile);
+          }
+          
+          await persistSubprofiles(subprofiles);
+          sendResponse({ ok: true });
+          break;
+        }
+        case 'DELETE_SUBPROFILE': {
+          const { subprofileId } = msg;
+          if (!subprofileId) throw new Error('Invalid subprofile ID');
+          
+          subprofiles = subprofiles.filter(s => s.id !== subprofileId);
+          await persistSubprofiles(subprofiles);
+          
+          // Clear active subprofile if it was deleted
+          if (activeSubprofileId === subprofileId) {
+            activeSubprofileId = null;
+            await persistActiveSubprofileId(null);
+          }
+          
+          sendResponse({ ok: true });
+          break;
+        }
+        case 'SET_ACTIVE_SUBPROFILE': {
+          const { subprofileId } = msg;
+          activeSubprofileId = subprofileId;
+          await persistActiveSubprofileId(subprofileId);
+          sendResponse({ ok: true });
+          break;
+        }
+        case 'GET_ACTIVE_SUBPROFILE': {
+          if (!activeSubprofileId) activeSubprofileId = await loadActiveSubprofileId();
+          if (!subprofiles.length) subprofiles = await loadSubprofilesFromStorage();
+          
+          const activeSubprofile = activeSubprofileId 
+            ? subprofiles.find(s => s.id === activeSubprofileId) 
+            : null;
+          sendResponse({ ok: true, activeSubprofileId, activeSubprofile });
+          break;
+        }
+        case 'GENERATE_SUBPROFILE_DATA': {
+          const { subprofileId } = msg;
+          if (!subprofileId) throw new Error('Invalid subprofile ID');
+          
+          if (!profile) profile = await loadProfileFromStorage();
+          if (!subprofiles.length) subprofiles = await loadSubprofilesFromStorage();
+          
+          const filteredData = await generateSubprofileData(profile, subprofileId, subprofiles);
+          
+          sendResponse({ 
+            ok: true, 
+            data: filteredData 
+          });
+          break;
+        }
+        
         default:
           break;
       }
@@ -78,6 +159,110 @@ async function loadProfileFromStorage() {
 
 async function persistProfile(profile) {
   await chrome.storage.local.set({ [PROFILE_STORAGE_KEY]: profile });
+}
+
+async function loadSubprofilesFromStorage() {
+  const { [SUBPROFILES_STORAGE_KEY]: storedSubprofiles } = await chrome.storage.local.get(SUBPROFILES_STORAGE_KEY);
+  return storedSubprofiles || [];
+}
+
+async function persistSubprofiles(subprofiles) {
+  await chrome.storage.local.set({ [SUBPROFILES_STORAGE_KEY]: subprofiles });
+}
+
+async function loadActiveSubprofileId() {
+  const { [ACTIVE_SUBPROFILE_KEY]: activeId } = await chrome.storage.local.get(ACTIVE_SUBPROFILE_KEY);
+  return activeId || null;
+}
+
+async function persistActiveSubprofileId(subprofileId) {
+  await chrome.storage.local.set({ [ACTIVE_SUBPROFILE_KEY]: subprofileId });
+}
+
+async function generateSubprofileData(fullProfile, subprofileId, subprofiles) {
+  const subprofile = subprofiles.find(s => s.id === subprofileId);
+  if (!subprofile || !fullProfile) return fullProfile;
+  
+  const { includedFields } = subprofile;
+  const filteredProfile = { version: fullProfile.version };
+  
+  // Filter identity fields
+  if (includedFields.identity) {
+    filteredProfile.identity = {};
+    if (includedFields.identity.displayName && fullProfile.identity?.displayName) {
+      filteredProfile.identity.displayName = fullProfile.identity.displayName;
+    }
+    if (includedFields.identity.languages && fullProfile.identity?.languages) {
+      filteredProfile.identity.languages = fullProfile.identity.languages;
+    }
+    if (includedFields.identity.location && fullProfile.identity?.location) {
+      filteredProfile.identity.location = fullProfile.identity.location;
+    }
+  }
+  
+  // Filter style fields
+  if (includedFields.style) {
+    filteredProfile.style = {};
+    if (includedFields.style.tone && fullProfile.style?.tone) {
+      filteredProfile.style.tone = fullProfile.style.tone;
+    }
+    if (includedFields.style.formatting && fullProfile.style?.formatting) {
+      filteredProfile.style.formatting = fullProfile.style.formatting;
+    }
+    if (includedFields.style.topics && includedFields.style.topics.length > 0 && fullProfile.style?.topics) {
+      filteredProfile.style.topics = fullProfile.style.topics.filter(topic => 
+        includedFields.style.topics.includes(topic)
+      );
+    }
+  }
+  
+  // Filter answers by ID
+  if (includedFields.answers && includedFields.answers.length > 0 && fullProfile.answers) {
+    filteredProfile.answers = fullProfile.answers.filter(answer => 
+      includedFields.answers.includes(answer.id)
+    );
+  }
+  
+  // Filter affinities
+  if (includedFields.affinities && includedFields.affinities.length > 0 && fullProfile.affinities) {
+    filteredProfile.affinities = fullProfile.affinities.filter(affinity => 
+      includedFields.affinities.includes(affinity)
+    );
+  }
+  
+  // Filter constraints
+  if (includedFields.constraints) {
+    filteredProfile.constraints = {};
+    if (includedFields.constraints.privacyNotes && fullProfile.constraints?.privacyNotes) {
+      filteredProfile.constraints.privacyNotes = fullProfile.constraints.privacyNotes;
+    }
+    if (includedFields.constraints.avoid && includedFields.constraints.avoid.length > 0 && fullProfile.constraints?.avoid) {
+      filteredProfile.constraints.avoid = fullProfile.constraints.avoid.filter(item => 
+        includedFields.constraints.avoid.includes(item)
+      );
+    }
+  }
+  
+  // Filter snippets
+  if (includedFields.snippets && includedFields.snippets.length > 0 && fullProfile.snippets) {
+    filteredProfile.snippets = fullProfile.snippets.filter(snippet => 
+      includedFields.snippets.includes(snippet.name)
+    );
+  }
+  
+  // Handle context items (popup data) - add them as a custom field
+  if (includedFields.contextItems && includedFields.contextItems.length > 0) {
+    // Load context items from storage asynchronously
+    const contextItemsData = await chrome.storage.local.get(['contextItems']);
+    if (contextItemsData.contextItems) {
+      const selectedContextItems = contextItemsData.contextItems.filter(item => 
+        includedFields.contextItems.includes(item.id)
+      );
+      filteredProfile.contextItems = selectedContextItems;
+    }
+  }
+  
+  return filteredProfile;
 }
 
 async function handleInsert(tabId, selection) {
@@ -235,6 +420,13 @@ function buildProfileChunks(profile) {
     if (totalBooleans > 0) {
       parts.push(`Personal preferences: ${yesCount}/${totalBooleans} items liked`);
     }
+  }
+  
+  // Context items from popup (custom Q&A data)
+  if (profile?.contextItems?.length) {
+    profile.contextItems.forEach(item => {
+      parts.push(`${item.question}: ${item.answer}`);
+    });
   }
   
   return parts;

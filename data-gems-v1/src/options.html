@@ -93,6 +93,113 @@
       .editor-panel {
         padding: 16px;
       }
+      
+      /* Subprofiles section */
+      .subprofiles-section {
+        margin-top: 30px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .subprofile-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid #eee;
+        gap: 12px;
+      }
+      .subprofile-item:last-child {
+        border-bottom: none;
+      }
+      .subprofile-icon {
+        font-size: 20px;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        color: white;
+      }
+      .subprofile-info {
+        flex: 1;
+      }
+      .subprofile-info h4 {
+        margin: 0 0 4px 0;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .subprofile-info p {
+        margin: 0;
+        font-size: 12px;
+        color: #666;
+      }
+      .subprofile-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .btn {
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .btn:hover {
+        background: #f5f5f5;
+      }
+      .btn-primary {
+        background: #2563eb;
+        color: white;
+        border-color: #2563eb;
+      }
+      .btn-primary:hover {
+        background: #1d4ed8;
+      }
+      .btn-danger {
+        background: #dc2626;
+        color: white;
+        border-color: #dc2626;
+      }
+      .btn-danger:hover {
+        background: #b91c1c;
+      }
+      
+      /* Templates grid */
+      .templates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+      }
+      .template-card {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 16px;
+        cursor: pointer;
+        transition: border-color 0.2s;
+      }
+      .template-card:hover {
+        border-color: #2563eb;
+      }
+      .template-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .template-icon {
+        font-size: 18px;
+      }
+      .template-name {
+        font-weight: 600;
+        margin: 0;
+      }
+      .template-description {
+        font-size: 12px;
+        color: #666;
+        margin: 0;
+      }
     </style>
   </head>
   <body>
@@ -168,6 +275,54 @@
     </details>
     
     <div id="error" class="danger"></div>
+
+    <!-- Subprofiles Management Section -->
+    <div class="subprofiles-section">
+      <div style="padding: 16px; background: #f8f9fa; border-bottom: 1px solid #ddd;">
+        <h2 style="margin: 0 0 8px 0;">📁 Subprofiles</h2>
+        <p style="margin: 0; color: #666; font-size: 14px;">Create focused versions of your profile for different contexts</p>
+      </div>
+      
+      <div id="subprofilesList">
+        <!-- Subprofiles will be rendered here -->
+      </div>
+      
+      <div style="padding: 16px;">
+        <button id="createSubprofileBtn" class="btn btn-primary">+ Create New Subprofile</button>
+        
+        <h4 style="margin: 16px 0 8px 0;">Quick Templates</h4>
+        <div class="templates-grid">
+          <div class="template-card" data-template="professional">
+            <div class="template-header">
+              <span class="template-icon">💼</span>
+              <h4 class="template-name">Professional</h4>
+            </div>
+            <p class="template-description">Work-related information and preferences</p>
+          </div>
+          <div class="template-card" data-template="personal">
+            <div class="template-header">
+              <span class="template-icon">🏠</span>
+              <h4 class="template-name">Personal</h4>
+            </div>
+            <p class="template-description">Hobbies, preferences, and lifestyle</p>
+          </div>
+          <div class="template-card" data-template="creative">
+            <div class="template-header">
+              <span class="template-icon">🎨</span>
+              <h4 class="template-name">Creative</h4>
+            </div>
+            <p class="template-description">Artistic preferences and creative projects</p>
+          </div>
+          <div class="template-card" data-template="learning">
+            <div class="template-header">
+              <span class="template-icon">📚</span>
+              <h4 class="template-name">Learning</h4>
+            </div>
+            <p class="template-description">Educational preferences and learning style</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <h2>Import / Export</h2>
     <div class="row">

@@ -201,6 +201,229 @@ export function validateProfile(profile) {
   return errors;
 }
 
+// Subprofile schema definition
+export const SUBPROFILE_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', maxLength: 36 }, // UUID
+    name: { type: 'string', maxLength: 50 },
+    description: { type: 'string', maxLength: 200 },
+    icon: { type: 'string', maxLength: 10 }, // Emoji
+    color: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$' }, // Hex color
+    createdAt: { type: 'string' }, // ISO timestamp
+    lastModified: { type: 'string' }, // ISO timestamp
+    isActive: { type: 'boolean' },
+    
+    // Selection configuration
+    includedFields: {
+      type: 'object',
+      properties: {
+        identity: {
+          type: 'object',
+          properties: {
+            displayName: { type: 'boolean' },
+            languages: { type: 'boolean' },
+            location: { type: 'boolean' }
+          }
+        },
+        style: {
+          type: 'object',
+          properties: {
+            topics: { type: 'array', items: { type: 'string', maxLength: 100 } },
+            tone: { type: 'boolean' },
+            formatting: { type: 'boolean' }
+          }
+        },
+        answers: { type: 'array', items: { type: 'string', maxLength: 50 } },
+        affinities: { type: 'array', items: { type: 'string', maxLength: 100 } },
+        constraints: {
+          type: 'object',
+          properties: {
+            avoid: { type: 'array', items: { type: 'string', maxLength: 100 } },
+            privacyNotes: { type: 'boolean' }
+          }
+        },
+        snippets: { type: 'array', items: { type: 'string', maxLength: 100 } }
+      }
+    }
+  },
+  required: ['id', 'name']
+};
+
+// Subprofile templates for quick setup
+export const SUBPROFILE_TEMPLATES = {
+  professional: {
+    name: 'Professional',
+    description: 'Work-related information and preferences',
+    icon: '💼',
+    color: '#2563EB',
+    includedFields: {
+      identity: { displayName: true, languages: true, location: false },
+      style: { tone: true, formatting: true, topics: [] },
+      answers: [], // Will be populated with work-related answer IDs
+      affinities: [], // Will be populated with professional affinities
+      constraints: { avoid: [], privacyNotes: true },
+      snippets: [] // Will be populated with work-related snippets
+    }
+  },
+  personal: {
+    name: 'Personal',
+    description: 'Hobbies, preferences, and lifestyle',
+    icon: '🏠',
+    color: '#10B981',
+    includedFields: {
+      identity: { displayName: true, languages: false, location: true },
+      style: { tone: true, formatting: false, topics: [] },
+      answers: [], // Will be populated with personal answer IDs
+      affinities: [], // Will be populated with personal affinities
+      constraints: { avoid: [], privacyNotes: false },
+      snippets: [] // Will be populated with personal snippets
+    }
+  },
+  creative: {
+    name: 'Creative',
+    description: 'Artistic preferences and creative projects',
+    icon: '🎨',
+    color: '#8B5CF6',
+    includedFields: {
+      identity: { displayName: true, languages: false, location: false },
+      style: { tone: true, formatting: true, topics: [] },
+      answers: [], // Will be populated with creative answer IDs
+      affinities: [], // Will be populated with creative affinities
+      constraints: { avoid: [], privacyNotes: false },
+      snippets: [] // Will be populated with creative snippets
+    }
+  },
+  learning: {
+    name: 'Learning',
+    description: 'Educational preferences and learning style',
+    icon: '📚',
+    color: '#F59E0B',
+    includedFields: {
+      identity: { displayName: false, languages: true, location: false },
+      style: { tone: true, formatting: true, topics: [] },
+      answers: [], // Will be populated with learning answer IDs
+      affinities: [], // Will be populated with learning affinities
+      constraints: { avoid: [], privacyNotes: false },
+      snippets: [] // Will be populated with learning snippets
+    }
+  }
+};
+
+export function validateSubprofile(subprofile) {
+  const errors = [];
+  
+  if (!subprofile || typeof subprofile !== 'object') {
+    return ['Subprofile must be an object'];
+  }
+  
+  if (!subprofile.id || typeof subprofile.id !== 'string') {
+    errors.push('Subprofile must have a valid ID');
+  }
+  
+  if (!subprofile.name || typeof subprofile.name !== 'string' || subprofile.name.trim().length === 0) {
+    errors.push('Subprofile must have a name');
+  }
+  
+  if (subprofile.name && subprofile.name.length > 50) {
+    errors.push('Subprofile name must be 50 characters or less');
+  }
+  
+  if (subprofile.description && (typeof subprofile.description !== 'string' || subprofile.description.length > 200)) {
+    errors.push('Subprofile description must be a string of 200 characters or less');
+  }
+  
+  if (subprofile.color && !/^#[0-9A-Fa-f]{6}$/.test(subprofile.color)) {
+    errors.push('Subprofile color must be a valid hex color');
+  }
+  
+  if (subprofile.includedFields && typeof subprofile.includedFields !== 'object') {
+    errors.push('includedFields must be an object');
+  }
+  
+  // Validate arrays in includedFields
+  if (subprofile.includedFields) {
+    const fields = subprofile.includedFields;
+    
+    if (fields.answers && !Array.isArray(fields.answers)) {
+      errors.push('includedFields.answers must be an array');
+    }
+    
+    if (fields.affinities && !Array.isArray(fields.affinities)) {
+      errors.push('includedFields.affinities must be an array');
+    }
+    
+    if (fields.snippets && !Array.isArray(fields.snippets)) {
+      errors.push('includedFields.snippets must be an array');
+    }
+    
+    if (fields.style && fields.style.topics && !Array.isArray(fields.style.topics)) {
+      errors.push('includedFields.style.topics must be an array');
+    }
+    
+    if (fields.constraints && fields.constraints.avoid && !Array.isArray(fields.constraints.avoid)) {
+      errors.push('includedFields.constraints.avoid must be an array');
+    }
+    
+    if (fields.contextItems && !Array.isArray(fields.contextItems)) {
+      errors.push('includedFields.contextItems must be an array');
+    }
+  }
+  
+  return errors;
+}
+
+export function cleanSubprofile(subprofile) {
+  if (!subprofile || typeof subprofile !== 'object') {
+    return null;
+  }
+  
+  const cleaned = {
+    id: subprofile.id,
+    name: (subprofile.name || '').trim().slice(0, 50),
+    description: (subprofile.description || '').trim().slice(0, 200),
+    icon: (subprofile.icon || '📝').slice(0, 10),
+    color: subprofile.color || '#6B7280',
+    createdAt: subprofile.createdAt || new Date().toISOString(),
+    lastModified: new Date().toISOString(),
+    isActive: Boolean(subprofile.isActive),
+    includedFields: {
+      identity: {
+        displayName: Boolean(subprofile.includedFields?.identity?.displayName),
+        languages: Boolean(subprofile.includedFields?.identity?.languages),
+        location: Boolean(subprofile.includedFields?.identity?.location)
+      },
+      style: {
+        topics: Array.isArray(subprofile.includedFields?.style?.topics) 
+          ? subprofile.includedFields.style.topics.filter(t => t && typeof t === 'string').slice(0, 20)
+          : [],
+        tone: Boolean(subprofile.includedFields?.style?.tone),
+        formatting: Boolean(subprofile.includedFields?.style?.formatting)
+      },
+      answers: Array.isArray(subprofile.includedFields?.answers)
+        ? subprofile.includedFields.answers.filter(a => a && typeof a === 'string').slice(0, 50)
+        : [],
+      affinities: Array.isArray(subprofile.includedFields?.affinities)
+        ? subprofile.includedFields.affinities.filter(a => a && typeof a === 'string').slice(0, 20)
+        : [],
+      constraints: {
+        avoid: Array.isArray(subprofile.includedFields?.constraints?.avoid)
+          ? subprofile.includedFields.constraints.avoid.filter(a => a && typeof a === 'string').slice(0, 20)
+          : [],
+        privacyNotes: Boolean(subprofile.includedFields?.constraints?.privacyNotes)
+      },
+      snippets: Array.isArray(subprofile.includedFields?.snippets)
+        ? subprofile.includedFields.snippets.filter(s => s && typeof s === 'string').slice(0, 20)
+        : [],
+      contextItems: Array.isArray(subprofile.includedFields?.contextItems)
+        ? subprofile.includedFields.contextItems.filter(id => id && typeof id === 'string').slice(0, 100)
+        : []
+    }
+  };
+  
+  return cleaned;
+}
+
 export function cleanProfile(profile) {
   if (!profile || typeof profile !== 'object') {
     return { version: '1', preferences: {} };

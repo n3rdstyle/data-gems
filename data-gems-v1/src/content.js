@@ -37,20 +37,52 @@ const AI_PLATFORMS = {
 // Store references to created buttons to avoid duplicates
 const injectedButtons = new WeakMap();
 let buttonIdCounter = 0;
+let lastButtonCreateTime = 0;
 
-// Create the inject button
+// Auto-injection settings
+let autoInjectSettings = {
+  enabled: false,
+  delay: 2 // seconds
+};
+let autoInjectTimeouts = new Set();
+
+// Simple one-time auto-injection flag
+let hasAutoInjected = false;
+
+// Create the inject button with dropdown
 function createInjectButton() {
   const buttonId = `prompt-profile-btn-${++buttonIdCounter}`;
+  const container = document.createElement('div');
+  container.className = 'prompt-profile-inject-container';
+  container.id = buttonId;
+  
+  // Main button
   const button = document.createElement('button');
   button.className = 'prompt-profile-inject-btn';
-  button.id = buttonId;
   button.innerHTML = `
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <line x1="12" y1="5" x2="12" y2="19"></line>
       <line x1="5" y1="12" x2="19" y2="12"></line>
     </svg>
-    <span>Attach my profile</span>
+    <span>Inject my profile</span>
   `;
+  
+  // Dropdown menu
+  const dropdown = document.createElement('div');
+  dropdown.className = 'prompt-profile-dropdown';
+  dropdown.style.display = 'none';
+  dropdown.innerHTML = `
+    <div class="dropdown-item" data-action="full">
+      <span class="item-label">Full Profile</span>
+      <span class="item-description">All your information</span>
+    </div>
+    <div class="dropdown-loading">
+      Loading subprofiles...
+    </div>
+  `;
+  
+  container.appendChild(button);
+  container.appendChild(dropdown);
   
   // Add styles if not already added
   const styleId = 'prompt-profile-inject-styles';
@@ -58,8 +90,12 @@ function createInjectButton() {
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = `
-      .prompt-profile-inject-btn {
+      .prompt-profile-inject-container {
         position: absolute !important;
+        z-index: 10000;
+      }
+      
+      .prompt-profile-inject-btn {
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -114,6 +150,57 @@ function createInjectButton() {
         60%, 100% { content: '...'; }
       }
       
+      
+      .prompt-profile-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+        z-index: 10001;
+        min-width: 200px;
+      }
+      
+      .dropdown-item {
+        padding: 12px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        transition: background-color 0.2s ease;
+      }
+      
+      .dropdown-item:last-child {
+        border-bottom: none;
+      }
+      
+      .dropdown-item:hover {
+        background-color: #f8f9fa;
+      }
+      
+      .item-label {
+        display: block;
+        font-weight: 500;
+        color: #374151;
+        font-size: 13px;
+      }
+      
+      .item-description {
+        display: block;
+        font-size: 11px;
+        color: #6b7280;
+        margin-top: 2px;
+      }
+      
+      .dropdown-loading {
+        padding: 12px 16px;
+        color: #6b7280;
+        font-size: 12px;
+        text-align: center;
+      }
+      
       /* Adjust for dark mode sites */
       @media (prefers-color-scheme: dark) {
         .prompt-profile-inject-btn {
@@ -124,15 +211,106 @@ function createInjectButton() {
     document.head.appendChild(style);
   }
   
-  // Add click handler
+  // Add click handler for dropdown toggle
   button.addEventListener('click', async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    await injectProfile(button);
+    toggleDropdown(container, dropdown);
   });
   
-  console.log('Created inject button with ID:', buttonId);
-  return button;
+  // Add click handlers for dropdown items
+  dropdown.addEventListener('click', async (e) => {
+    const item = e.target.closest('.dropdown-item');
+    if (item) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const action = item.dataset.action;
+      hideDropdown(container, dropdown);
+      
+      if (action === 'full') {
+        await injectProfile(button, null); // Full profile
+      } else {
+        await injectProfile(button, action); // Subprofile ID
+      }
+    }
+  });
+  
+  // Load subprofiles and populate dropdown
+  loadSubprofilesForDropdown(dropdown);
+  
+  console.log('Created inject button with dropdown, ID:', buttonId);
+  return container;
+}
+
+// Dropdown functionality
+function toggleDropdown(container, dropdown) {
+  const isOpen = container.classList.contains('open');
+  if (isOpen) {
+    hideDropdown(container, dropdown);
+  } else {
+    showDropdown(container, dropdown);
+  }
+}
+
+function showDropdown(container, dropdown) {
+  container.classList.add('open');
+  dropdown.style.display = 'block';
+  
+  // Close dropdown when clicking outside
+  setTimeout(() => {
+    document.addEventListener('click', (e) => {
+      if (!container.contains(e.target)) {
+        hideDropdown(container, dropdown);
+      }
+    }, { once: true });
+  }, 100);
+}
+
+function hideDropdown(container, dropdown) {
+  container.classList.remove('open');
+  dropdown.style.display = 'none';
+}
+
+// Load subprofiles for dropdown
+async function loadSubprofilesForDropdown(dropdown) {
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'LOAD_SUBPROFILES' });
+    
+    if (response?.ok && response.subprofiles) {
+      const subprofiles = response.subprofiles;
+      
+      // Remove loading message
+      const loading = dropdown.querySelector('.dropdown-loading');
+      if (loading) {
+        loading.remove();
+      }
+      
+      // Add subprofile items
+      subprofiles.forEach(subprofile => {
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.dataset.action = subprofile.id;
+        item.innerHTML = `
+          <span class="item-label">${subprofile.icon} ${subprofile.name}</span>
+          <span class="item-description">${subprofile.description || 'Custom subprofile'}</span>
+        `;
+        dropdown.appendChild(item);
+      });
+    } else {
+      // Hide loading message if no subprofiles
+      const loading = dropdown.querySelector('.dropdown-loading');
+      if (loading) {
+        loading.textContent = 'No subprofiles found';
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load subprofiles:', error);
+    const loading = dropdown.querySelector('.dropdown-loading');
+    if (loading) {
+      loading.textContent = 'Failed to load subprofiles';
+    }
+  }
 }
 
 // Find the actual prompt container (not just the input element)
@@ -364,23 +542,43 @@ function buildContextText(contextItems) {
 }
 
 // Attach profile as a file
-async function injectProfile(button) {
-  console.log('Attaching profile...');
+async function injectProfile(button, subprofileId = null) {
+  console.log('Injecting profile...', subprofileId ? `Subprofile: ${subprofileId}` : 'Full profile');
   button.classList.add('loading');
   button.querySelector('span').textContent = 'Loading';
   
   try {
-    // Get context items from storage
-    const result = await chrome.storage.local.get(['contextItems']);
-    const contextItems = result.contextItems || [];
+    let contextItems = [];
     
-    console.log('Found context items:', contextItems.length);
+    if (subprofileId) {
+      // Get subprofile data
+      const response = await chrome.runtime.sendMessage({ 
+        type: 'GENERATE_SUBPROFILE_DATA', 
+        subprofileId: subprofileId 
+      });
+      
+      if (response?.ok && response.data) {
+        // Extract context items from subprofile data
+        if (response.data.contextItems) {
+          contextItems = response.data.contextItems;
+        }
+        console.log('Found subprofile context items:', contextItems.length);
+      } else {
+        throw new Error('Failed to load subprofile data');
+      }
+    } else {
+      // Get full profile context items from storage
+      const result = await chrome.storage.local.get(['contextItems']);
+      contextItems = result.contextItems || [];
+      console.log('Found full profile context items:', contextItems.length);
+    }
     
     if (contextItems.length === 0) {
-      button.querySelector('span').textContent = 'No profile data';
+      const noDataText = subprofileId ? 'Subprofile empty' : 'No profile data';
+      button.querySelector('span').textContent = noDataText;
       setTimeout(() => {
         button.classList.remove('loading');
-        button.querySelector('span').textContent = 'Attach my profile';
+        button.querySelector('span').textContent = 'Inject my profile';
       }, 2000);
       return;
     }
@@ -654,7 +852,8 @@ async function injectProfile(button) {
           }, 500);
           
           // Success feedback
-          button.querySelector('span').textContent = 'Attached!';
+          const successText = subprofileId ? 'Subprofile injected!' : 'Profile injected!';
+          button.querySelector('span').textContent = successText;
           button.classList.add('success');
           
           setTimeout(() => {
@@ -697,7 +896,8 @@ async function injectProfile(button) {
     fileInput.dispatchEvent(inputEvent);
     
     // Success feedback
-    button.querySelector('span').textContent = 'Attached!';
+    const successText = subprofileId ? 'Subprofile injected!' : 'Profile injected!';
+    button.querySelector('span').textContent = successText;
     button.classList.add('success');
     
     setTimeout(() => {
@@ -743,46 +943,451 @@ function findNearestInput(button) {
   return null;
 }
 
+// Load auto-injection settings from storage
+async function loadAutoInjectSettings() {
+  try {
+    const result = await chrome.storage.local.get(['autoInjectSettings']);
+    if (result.autoInjectSettings) {
+      autoInjectSettings = { ...autoInjectSettings, ...result.autoInjectSettings };
+      console.log('🔧 Loaded auto-inject settings:', autoInjectSettings);
+    }
+  } catch (error) {
+    console.error('Error loading auto-inject settings:', error);
+  }
+}
+
+// Auto-inject profile when enabled
+async function autoInjectProfile() {
+  console.log('🔍 === AUTO-INJECT DEBUG START ===');
+  console.log('autoInjectSettings:', autoInjectSettings);
+  console.log('hasAutoInjected:', hasAutoInjected);
+  console.log('isNewChatState():', isNewChatState());
+  console.log('Current URL:', window.location.href);
+  console.log('Stack trace:', new Error().stack);
+  
+  if (!autoInjectSettings.enabled) {
+    console.log('❌ Auto-injection disabled, returning');
+    return;
+  }
+  
+  if (!isNewChatState()) {
+    console.log('❌ Not in new chat state, returning');
+    return;
+  }
+  
+  // Simple check: if we've already auto-injected, never do it again
+  if (hasAutoInjected) {
+    console.log('🚫 Auto-injection already performed, skipping');
+    console.log('🔍 === AUTO-INJECT DEBUG END (SKIPPED) ===');
+    return;
+  }
+  
+  console.log('🤖 Auto-injection enabled, scheduling injection in', autoInjectSettings.delay, 'seconds');
+  
+  // Mark that we're about to auto-inject (prevent multiple timeouts)
+  hasAutoInjected = true;
+  console.log('✅ Set hasAutoInjected to true');
+  
+  const timeoutId = setTimeout(async () => {
+    console.log('🔥 === AUTO-INJECT TIMEOUT FIRED ===');
+    console.log('hasAutoInjected at timeout:', hasAutoInjected);
+    
+    autoInjectTimeouts.delete(timeoutId);
+    
+    try {
+      // Double-check we're still in new chat state
+      if (!isNewChatState()) {
+        console.log('🚫 No longer in new chat state, canceling auto-injection');
+        return;
+      }
+      
+      console.log('🚀 Performing auto-injection...');
+      
+      // Get the active subprofile ID from storage
+      const result = await chrome.storage.local.get(['activeSubprofileId']);
+      const subprofileId = result.activeSubprofileId || null;
+      
+      // Find a valid input field
+      const hostname = window.location.hostname;
+      const config = AI_PLATFORMS[hostname] || AI_PLATFORMS.default;
+      const inputs = document.querySelectorAll(config.selector);
+      
+      let targetInput = null;
+      for (const input of inputs) {
+        if (isValidInput(input)) {
+          targetInput = input;
+          break;
+        }
+      }
+      
+      if (!targetInput) {
+        console.error('🚫 No valid input found for auto-injection');
+        return;
+      }
+      
+      // Perform the injection using existing logic
+      console.log('📝 Auto-injecting into input:', targetInput);
+      await performDirectInjection(targetInput, subprofileId);
+      
+      console.log('✅ Auto-injection completed - will not auto-inject again until extension reload');
+      
+    } catch (error) {
+      console.error('❌ Auto-injection failed:', error);
+    }
+  }, autoInjectSettings.delay * 1000);
+  
+  autoInjectTimeouts.add(timeoutId);
+}
+
+// Perform direct file injection (for auto-injection) - same as manual injection
+async function performDirectInjection(inputElement, subprofileId = null) {
+  console.log('📎 Performing direct file injection...', subprofileId ? `Subprofile: ${subprofileId}` : 'Full profile');
+  
+  try {
+    let contextItems = [];
+    
+    if (subprofileId) {
+      // Get subprofile data
+      const response = await chrome.runtime.sendMessage({ 
+        type: 'GENERATE_SUBPROFILE_DATA', 
+        subprofileId: subprofileId 
+      });
+      
+      if (response?.ok && response.data) {
+        if (response.data.contextItems) {
+          contextItems = response.data.contextItems;
+        }
+        console.log('Found subprofile context items:', contextItems.length);
+      } else {
+        throw new Error('Failed to load subprofile data');
+      }
+    } else {
+      // Get full profile context items from storage
+      const result = await chrome.storage.local.get(['contextItems']);
+      contextItems = result.contextItems || [];
+      console.log('Found full profile context items:', contextItems.length);
+    }
+    
+    if (contextItems.length === 0) {
+      console.log('⚠️ No profile data to inject');
+      return;
+    }
+    
+    // Create profile JSON (same format as manual injection)
+    const profileData = {
+      version: "1.0",
+      timestamp: new Date().toISOString(),
+      categories: {},
+      totalItems: contextItems.length
+    };
+    
+    // Group items by category
+    contextItems.forEach(item => {
+      if (!profileData.categories[item.category]) {
+        profileData.categories[item.category] = [];
+      }
+      profileData.categories[item.category].push({
+        question: item.question,
+        answer: item.answer
+      });
+    });
+    
+    // Create a blob and file
+    const jsonBlob = new Blob([JSON.stringify(profileData, null, 2)], { type: 'application/json' });
+    const file = new File([jsonBlob], 'my-profile.json', { type: 'application/json' });
+    
+    console.log('📄 Created profile JSON file:', file.name, 'Size:', file.size, 'bytes');
+    
+    // Use the same file attachment logic as manual injection
+    const success = await attachFileToInput(file);
+    
+    if (success) {
+      console.log('✅ Auto-injection file attachment successful');
+    } else {
+      console.error('❌ Auto-injection file attachment failed');
+    }
+    
+  } catch (error) {
+    console.error('❌ Direct file injection failed:', error);
+  }
+}
+
+// Attach file to input using the same logic as manual injection
+async function attachFileToInput(file) {
+  const hostname = window.location.hostname;
+  let fileInput = null;
+  let fileInputSelectors = [];
+  
+  // Platform-specific file input selectors (same as manual injection)
+  if (hostname.includes('chatgpt.com') || hostname.includes('chat.openai.com')) {
+    fileInputSelectors = ['input[type="file"]', 'input[accept*="text"]', 'input[accept*="json"]'];
+  } else if (hostname.includes('claude.ai')) {
+    fileInputSelectors = ['input[type="file"]', 'input[accept]'];
+  } else if (hostname.includes('gemini.google.com')) {
+    fileInputSelectors = [
+      'input[type="file"]', 
+      'input[accept]',
+      'input[accept*="application"]',
+      'input[accept*="text"]',
+      'input[accept*="json"]',
+      'input.file-upload-input',
+      '[class*="file"] input[type="file"]'
+    ];
+  } else if (hostname.includes('perplexity.ai')) {
+    fileInputSelectors = ['input[type="file"]', 'input[accept]'];
+  }
+  
+  // Try to find existing file input
+  for (const selector of fileInputSelectors) {
+    fileInput = document.querySelector(selector);
+    if (fileInput) break;
+  }
+  
+  // If no file input found, try to trigger file upload button click
+  if (!fileInput) {
+    console.log('🔍 No file input found, looking for upload button...');
+    
+    // Common upload button selectors (same as manual injection)
+    let uploadButtonSelectors = [
+      'button[aria-label*="attach" i]',
+      'button[aria-label*="upload" i]',
+      'button[aria-label*="file" i]',
+      '[data-testid*="file" i]',
+      'button svg[class*="paperclip" i]',
+      'button svg[class*="attach" i]',
+      'button[title*="attach" i]',
+      'button[title*="upload" i]'
+    ];
+    
+    // Platform-specific upload button selectors
+    if (hostname.includes('gemini.google.com')) {
+      uploadButtonSelectors = [
+        'button[aria-label*="upload" i]',
+        'button.upload-card-button',
+        'button[class*="upload"]',
+        'button mat-icon-button[aria-label*="upload" i]',
+        ...uploadButtonSelectors
+      ];
+    }
+    
+    let uploadButton = null;
+    for (const selector of uploadButtonSelectors) {
+      uploadButton = document.querySelector(selector);
+      if (uploadButton) {
+        console.log('📤 Found upload button:', uploadButton);
+        uploadButton.click();
+        
+        // Wait for file input to appear
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Try to find file input again
+        for (const selector of fileInputSelectors) {
+          fileInput = document.querySelector(selector);
+          if (fileInput) break;
+        }
+        break;
+      }
+    }
+  }
+  
+  if (!fileInput) {
+    console.error('❌ No file input or upload mechanism found');
+    return false;
+  }
+  
+  console.log('📎 Found file input:', fileInput);
+  
+  // Create a DataTransfer object and add our file
+  const dataTransfer = new DataTransfer();
+  dataTransfer.items.add(file);
+  
+  // Set the files on the input
+  fileInput.files = dataTransfer.files;
+  
+  // Trigger change and input events
+  const changeEvent = new Event('change', { bubbles: true });
+  const inputEvent = new Event('input', { bubbles: true });
+  fileInput.dispatchEvent(changeEvent);
+  fileInput.dispatchEvent(inputEvent);
+  
+  console.log('✅ File attached and events triggered');
+  return true;
+}
+
+// Clear auto-injection timeouts
+function clearAutoInjectTimeouts() {
+  autoInjectTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+  autoInjectTimeouts.clear();
+  console.log('🧹 Cleared auto-injection timeouts');
+}
+
+// Check if we're in a new chat state
+function isNewChatState() {
+  const hostname = window.location.hostname;
+  
+  if (hostname.includes('claude.ai')) {
+    // For Claude.ai, check multiple indicators of a new chat
+    const indicators = {
+      // Check if URL is the base URL or a new chat URL
+      isNewChatUrl: window.location.pathname === '/' || 
+                   window.location.pathname === '/chat' || 
+                   window.location.pathname.startsWith('/chat/new'),
+      
+      // Check if there are no existing messages in the conversation
+      // Look for more specific Claude.ai message indicators
+      hasNoMessages: document.querySelectorAll(
+        '[data-testid*="conversation"], .conversation, [class*="message"], [class*="Message"], ' +
+        '[role="article"], article, [data-testid*="message"], ' +
+        '.prose, [class*="prose"], [class*="chat"], [data-testid*="chat"]'
+      ).length === 0,
+      
+      // Check for empty state indicators - more specific to Claude
+      hasEmptyState: document.querySelector(
+        '[class*="empty"], [class*="welcome"], [data-testid*="empty"], ' +
+        '[class*="onboarding"], [class*="start"], [class*="new-chat"], [class*="placeholder"]'
+      ) !== null,
+      
+      // Check if there's a chat history in the URL (Claude uses /chat/{chat-id})
+      isExistingChatUrl: /\/chat\/[a-zA-Z0-9-]+/.test(window.location.pathname),
+      
+      // Check if the input is clean/empty
+      hasEmptyInput: true // We'll check this below
+    };
+    
+    // Check if the main input is empty
+    const inputs = document.querySelectorAll('div[contenteditable="true"], textarea');
+    for (const input of inputs) {
+      const text = input.textContent || input.value || '';
+      if (text.trim().length > 0) {
+        indicators.hasEmptyInput = false;
+        break;
+      }
+    }
+    
+    // More lenient detection: New chat if it's a new URL OR no messages are visible
+    const isNewChat = indicators.isNewChatUrl || 
+                     (indicators.hasNoMessages && !indicators.isExistingChatUrl) ||
+                     (indicators.hasNoMessages && indicators.hasEmptyState);
+    
+    console.log('🔍 New chat state check:', {
+      ...indicators,
+      finalDecision: isNewChat
+    });
+    
+    return isNewChat;
+  }
+  
+  // For other platforms, use similar logic
+  if (hostname.includes('chatgpt.com') || hostname.includes('chat.openai.com')) {
+    return window.location.pathname === '/' || 
+           document.querySelectorAll('[data-testid*="conversation-turn"]').length === 0;
+  }
+  
+  if (hostname.includes('gemini.google.com')) {
+    return document.querySelectorAll('[class*="conversation"], [class*="message"]').length === 0;
+  }
+  
+  // Default: assume it's always a new chat for other platforms
+  return true;
+}
+
 // Add inject buttons to input fields
-function addInjectButtons() {
+function addInjectButtons(forceCleanup = false, skipNewChatCheck = false) {
+  console.log('🎯 === ADD INJECT BUTTONS CALLED ===');
+  console.log('Stack trace:', new Error().stack);
+  
   const hostname = window.location.hostname;
   const config = AI_PLATFORMS[hostname] || AI_PLATFORMS.default;
   
   console.log('Looking for inputs on', hostname, 'with selector:', config.selector);
   
-  // Remove the check that prevents button in existing conversations
-  // We want to show the button even in ongoing chats
+  // Check if we're in a new chat state (unless we're skipping this check)
+  if (!skipNewChatCheck && !isNewChatState()) {
+    console.log('🚫 Not in a new chat state, skipping button creation');
+    // Remove any existing buttons since we're no longer in new chat mode (but not immediately)
+    const existingButtons = document.querySelectorAll('.prompt-profile-inject-container');
+    if (existingButtons.length > 0) {
+      console.log('🧹 Removing buttons - no longer in new chat state');
+      removeAllInjectButtons('not in new chat state', false); // Don't force immediate removal
+    }
+    // Clear any pending auto-injection timeouts
+    clearAutoInjectTimeouts();
+    return;
+  }
+  
+  console.log('✅ In new chat state, checking auto-injection settings...');
+  
+  // If auto-injection is enabled, don't show buttons and trigger auto-injection instead
+  if (autoInjectSettings.enabled) {
+    console.log('🤖 Auto-injection enabled, skipping button creation');
+    // Remove any existing buttons
+    const existingButtons = document.querySelectorAll('.prompt-profile-inject-container');
+    if (existingButtons.length > 0) {
+      console.log('🧹 Removing buttons - auto-injection is enabled');
+      removeAllInjectButtons('auto-injection enabled', true);
+    }
+    // Trigger auto-injection
+    console.log('📍 CALLER: addInjectButtons() triggering autoInjectProfile');
+    autoInjectProfile();
+    return;
+  }
+  
+  console.log('🔘 Auto-injection disabled, proceeding with button creation');
+  
+  // Check if we already have buttons before cleaning up
+  const existingButtons = document.querySelectorAll('.prompt-profile-inject-container');
+  console.log('Found', existingButtons.length, 'existing buttons');
+  
+  // Only clean up if forced or if we have too many existing buttons
+  if (forceCleanup || existingButtons.length > 1) {
+    console.log('Cleaning up existing buttons...');
+    const reason = forceCleanup ? 'forced cleanup' : `duplicate buttons (${existingButtons.length})`;
+    removeAllInjectButtons(reason);
+  }
   
   const inputs = document.querySelectorAll(config.selector);
   console.log('Found', inputs.length, 'potential input elements');
   
   let buttonAdded = false;
   
-  inputs.forEach(input => {
-    // Skip if button already exists for this input
-    if (injectedButtons.has(input)) {
-      console.log('Button already exists for input');
+  inputs.forEach((input, index) => {
+    console.log(`Processing input ${index + 1}/${inputs.length}:`, input);
+    
+    // Check if we already have a button for this input
+    const hasExistingButton = injectedButtons.has(input);
+    console.log('Has existing button:', hasExistingButton);
+    
+    if (hasExistingButton) {
+      console.log('Skipping: Button already exists for this input');
       return;
     }
     
     // Skip small inputs (likely not for prompts) - but be more lenient for contenteditable
     const rect = input.getBoundingClientRect();
+    console.log('Input dimensions:', rect.width, 'x', rect.height);
+    
     if (input.tagName !== 'DIV' && (rect.width < 200 || rect.height < 40)) {
-      console.log('Input too small:', rect.width, 'x', rect.height);
+      console.log('Skipping: Input too small:', rect.width, 'x', rect.height);
       return;
     }
     
     // Skip hidden or invisible inputs
-    if (!isValidInput(input)) {
-      console.log('Input not valid (hidden or disabled)');
+    const isValid = isValidInput(input);
+    console.log('Input valid:', isValid);
+    
+    if (!isValid) {
+      console.log('Skipping: Input not valid (hidden or disabled)');
       return;
     }
     
-    console.log('Adding button for input:', input);
+    console.log('✓ Adding button for valid input:', input);
     
     // Create and position the button
     const button = createInjectButton();
     document.body.appendChild(button);
+    
+    // Record the time when button was created
+    lastButtonCreateTime = Date.now();
     
     // Position the button
     positionButton(button, input);
@@ -822,18 +1427,28 @@ function addInjectButtons() {
       });
     }
     
-    // Hide button when input is cleared or when user starts typing after injection
+    // Hide button when user starts typing (no longer a new chat)
     input.addEventListener('input', () => {
-      // Small delay to check if input was actually cleared
+      // Small delay to check if input has content
       setTimeout(() => {
-        const isEmpty = input.tagName === 'TEXTAREA' || input.tagName === 'INPUT' 
-          ? !input.value.trim() 
-          : !input.textContent.trim();
+        const hasContent = input.tagName === 'TEXTAREA' || input.tagName === 'INPUT' 
+          ? input.value.trim().length > 0
+          : input.textContent.trim().length > 0;
         
-        if (isEmpty && button.style.display === 'none') {
-          // Input was cleared, show button again
-          button.style.display = 'inline-flex';
-          console.log('Input cleared, showing inject button again');
+        if (hasContent) {
+          // User started typing, no longer a new chat - hide button
+          console.log('🙈 User started typing, hiding inject button');
+          button.style.display = 'none';
+          // Remove from tracking
+          if (injectedButtons.has(input)) {
+            injectedButtons.delete(input);
+          }
+        } else {
+          // Input was cleared and we're still in new chat state, show button again
+          if (isNewChatState() && button.style.display === 'none') {
+            button.style.display = 'inline-flex';
+            console.log('🔄 Input cleared in new chat, showing inject button again');
+          }
         }
       }, 100);
     });
@@ -846,30 +1461,87 @@ function addInjectButtons() {
   }
 }
 
+// Remove all injection buttons and clear the tracking map
+function removeAllInjectButtons(reason = 'unknown', force = false) {
+  const timeSinceLastCreate = Date.now() - lastButtonCreateTime;
+  const minTimeBeforeRemoval = 3000; // 3 seconds minimum
+  
+  if (!force && timeSinceLastCreate < minTimeBeforeRemoval) {
+    console.log(`⏳ Delaying button removal (${reason}) - only ${timeSinceLastCreate}ms since creation. Waiting ${minTimeBeforeRemoval - timeSinceLastCreate}ms more.`);
+    setTimeout(() => {
+      removeAllInjectButtons(reason, true);
+    }, minTimeBeforeRemoval - timeSinceLastCreate);
+    return;
+  }
+  
+  console.log('🗑️ Removing all inject buttons. Reason:', reason);
+  console.trace('Button removal stack trace:');
+  
+  // Remove all button containers from DOM
+  document.querySelectorAll('.prompt-profile-inject-container').forEach(container => {
+    console.log('Removing button container:', container.id);
+    container.remove();
+  });
+  
+  // Also remove standalone buttons (in case some exist)
+  document.querySelectorAll('.prompt-profile-inject-btn').forEach(button => {
+    console.log('Removing standalone button');
+    button.remove();
+  });
+  
+  // Clear the WeakMap to reset tracking
+  injectedButtons.clear();
+  
+  console.log('All inject buttons removed');
+}
+
 // Remove buttons for inputs that no longer exist or when chat state changes
 function cleanupButtons() {
-  document.querySelectorAll('.prompt-profile-inject-btn').forEach(button => {
-    // Check if there's still a valid input on the page
-    const hostname = window.location.hostname;
-    const config = AI_PLATFORMS[hostname] || AI_PLATFORMS.default;
-    const inputs = document.querySelectorAll(config.selector);
-    
-    let hasValidInput = false;
-    for (const input of inputs) {
-      if (isValidInput(input)) {
-        hasValidInput = true;
-        break;
+  console.log('🧹 cleanupButtons called');
+  
+  const hostname = window.location.hostname;
+  const config = AI_PLATFORMS[hostname] || AI_PLATFORMS.default;
+  const inputs = document.querySelectorAll(config.selector);
+  
+  console.log('Cleanup: found', inputs.length, 'potential inputs');
+  
+  let validInputs = [];
+  for (const input of inputs) {
+    if (isValidInput(input)) {
+      validInputs.push(input);
+    }
+  }
+  
+  console.log('Cleanup: found', validInputs.length, 'valid inputs');
+  
+  // Be more conservative - only remove buttons if there are definitely no valid inputs
+  // AND if we haven't just added buttons recently
+  const existingButtons = document.querySelectorAll('.prompt-profile-inject-container');
+  console.log('Cleanup: found', existingButtons.length, 'existing buttons');
+  
+  if (validInputs.length === 0 && existingButtons.length > 0) {
+    // Wait a bit to see if inputs appear (they might be loading)
+    console.log('⏳ No valid inputs found, waiting 2 seconds before cleanup...');
+    setTimeout(() => {
+      // Double-check after waiting
+      const recheckInputs = document.querySelectorAll(config.selector);
+      let recheckValidInputs = 0;
+      for (const input of recheckInputs) {
+        if (isValidInput(input)) {
+          recheckValidInputs++;
+        }
       }
-    }
-    
-    // Remove the check that hides button when messages exist
-    // We want the button visible even in ongoing conversations
-    
-    if (!hasValidInput) {
-      console.log('Removing orphaned button');
-      button.remove();
-    }
-  });
+      
+      if (recheckValidInputs === 0) {
+        console.log('🗑️ Still no valid inputs after wait, removing buttons');
+        removeAllInjectButtons('no valid inputs after wait');
+      } else {
+        console.log('✅ Found valid inputs after wait, keeping buttons');
+      }
+    }, 2000);
+  } else {
+    console.log('✅ Valid inputs exist or no buttons to clean up');
+  }
 }
 
 // Original insertion function (keep for compatibility)
@@ -1065,8 +1737,35 @@ function findAiInput() {
 chrome.runtime.onMessage.addListener((msg, _sender, _sendResponse) => {
   console.log('Prompt Profile Injector: Message received', msg);
   
-  if (!msg || msg.type !== 'INSERT_TEXT') {
-    console.log('Prompt Profile Injector: Wrong message type or no message');
+  if (!msg) {
+    console.log('Prompt Profile Injector: No message');
+    return;
+  }
+  
+  if (msg.type === 'AUTO_INJECT_SETTINGS_CHANGED') {
+    console.log('🔧 Auto-inject settings changed:', msg.settings);
+    autoInjectSettings = { ...autoInjectSettings, ...msg.settings };
+    
+    // Clear any pending timeouts
+    clearAutoInjectTimeouts();
+    
+    // If we're in a new chat and auto-injection is now enabled, trigger it
+    if (autoInjectSettings.enabled && isNewChatState()) {
+      // Remove any existing buttons
+      removeAllInjectButtons('settings changed - auto-injection enabled', true);
+      // Trigger auto-injection
+      console.log('📍 CALLER: Message listener triggering autoInjectProfile');
+      autoInjectProfile();
+    } else if (!autoInjectSettings.enabled && isNewChatState()) {
+      // Auto-injection disabled, show buttons if appropriate
+      addInjectButtons();
+    }
+    
+    return;
+  }
+  
+  if (msg.type !== 'INSERT_TEXT') {
+    console.log('Prompt Profile Injector: Wrong message type');
     return;
   }
   
@@ -1095,8 +1794,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, _sendResponse) => {
 });
 
 // Initialize and monitor for changes
-function initialize() {
+async function initialize() {
   console.log('Initializing Prompt Profile Injector...');
+  
+  // Load auto-injection settings
+  await loadAutoInjectSettings();
   
   // Wait a bit for dynamic content to load
   setTimeout(() => {
@@ -1105,41 +1807,100 @@ function initialize() {
   
   // Try again after more time for slow-loading content
   setTimeout(() => {
-    if (document.querySelectorAll('.prompt-profile-inject-btn').length === 0) {
+    if (document.querySelectorAll('.prompt-profile-inject-container').length === 0) {
       console.log('No buttons found after 3 seconds, trying again...');
       addInjectButtons();
     }
   }, 3000);
   
-  // Monitor for new inputs (for SPAs and dynamic content)
+  // Detect URL changes for single-page applications like Claude.ai
+  let currentUrl = window.location.href;
+  const urlObserver = new MutationObserver((mutations) => {
+    if (window.location.href !== currentUrl) {
+      console.log('🔄 URL changed from', currentUrl, 'to', window.location.href);
+      currentUrl = window.location.href;
+      
+      // Check if new URL is a new chat and reinitialize accordingly
+      setTimeout(() => {
+        console.log('🔍 Checking new chat state after URL change...');
+        
+        if (isNewChatState()) {
+          console.log('✅ New URL is a new chat, resetting auto-injection flag and adding button');
+          // Reset auto-injection flag for new chat
+          hasAutoInjected = false;
+          console.log('🔄 Reset hasAutoInjected to false for new chat');
+          addInjectButtons(true, true); // Force cleanup, skip new chat check (we just checked)
+        } else {
+          console.log('📝 New URL is existing chat, removing button');
+          removeAllInjectButtons('navigated to existing chat');
+        }
+      }, 1500); // Increased delay to let page content load
+    }
+  });
+  
+  // Watch for changes that might indicate navigation (title changes, etc.)
+  urlObserver.observe(document, { childList: true, subtree: true });
+  
+  // Also listen to popstate events for back/forward navigation
+  window.addEventListener('popstate', () => {
+    console.log('Popstate event detected, reinitializing...');
+    setTimeout(() => {
+      // Reset auto-injection flag on navigation
+      hasAutoInjected = false;
+      console.log('🔄 Reset hasAutoInjected to false for popstate navigation');
+      addInjectButtons(true); // Force cleanup on navigation
+    }, 1000);
+  });
+  
+  // Monitor for new inputs (for SPAs and dynamic content) - but be more selective
   const observer = new MutationObserver((mutations) => {
     // Check if we need to add buttons
     let shouldCheck = false;
+    let hasRemovedElements = false;
     
     for (const mutation of mutations) {
-      if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+      if (mutation.type === 'childList') {
         // Check if any added nodes might be inputs
-        for (const node of mutation.addedNodes) {
-          if (node.nodeType === 1) { // Element node
-            if (node.matches && (
-              node.matches('div[contenteditable="true"], textarea, input') ||
-              node.querySelector && node.querySelector('div[contenteditable="true"], textarea, input')
-            )) {
-              shouldCheck = true;
-              break;
+        if (mutation.addedNodes.length > 0) {
+          for (const node of mutation.addedNodes) {
+            if (node.nodeType === 1) { // Element node
+              if (node.matches && (
+                node.matches('div[contenteditable="true"], textarea, input, fieldset, form') ||
+                (node.querySelector && node.querySelector('div[contenteditable="true"], textarea, input'))
+              )) {
+                console.log('📝 New input-related element detected:', node.tagName);
+                shouldCheck = true;
+                break;
+              }
             }
           }
+        }
+        
+        // Also check if any elements were removed that might affect our buttons
+        if (mutation.removedNodes.length > 0) {
+          hasRemovedElements = true;
         }
       }
       if (shouldCheck) break;
     }
     
     if (shouldCheck) {
-      console.log('DOM changed, checking for new inputs...');
+      console.log('🔄 DOM changed, checking if it\'s a new chat...');
       setTimeout(() => {
-        addInjectButtons();
-        cleanupButtons();
-      }, 500);
+        if (isNewChatState()) {
+          console.log('✅ DOM change detected new chat, adding button');
+          addInjectButtons(false, true); // Don't force cleanup, skip new chat check
+        } else {
+          console.log('📝 DOM change but not new chat, ensuring no buttons exist');
+          const existingButtons = document.querySelectorAll('.prompt-profile-inject-container');
+          if (existingButtons.length > 0) {
+            removeAllInjectButtons('DOM change - not new chat');
+          }
+        }
+      }, 1000); // Increased delay to allow DOM to settle
+    } else if (hasRemovedElements) {
+      // Elements were removed, might affect new chat state - check later
+      console.log('📤 Elements removed from DOM, will check chat state later...');
     }
   });
   
@@ -1148,15 +1909,28 @@ function initialize() {
     subtree: true
   });
   
-  // Also check periodically for dynamic content
+  // Check periodically for new chats that might need buttons - less frequently to avoid interference
   setInterval(() => {
-    const existingButtons = document.querySelectorAll('.prompt-profile-inject-btn').length;
-    if (existingButtons === 0) {
-      console.log('No inject buttons found, checking for inputs...');
-      addInjectButtons();
+    const existingButtons = document.querySelectorAll('.prompt-profile-inject-container').length;
+    const isNewChat = isNewChatState();
+    
+    console.log('⏰ Periodic check - buttons:', existingButtons, 'isNewChat:', isNewChat, 'hasAutoInjected:', hasAutoInjected, 'autoInjectEnabled:', autoInjectSettings.enabled);
+    
+    if (isNewChat && existingButtons === 0) {
+      // If auto-injection is enabled and already performed, don't do anything
+      if (autoInjectSettings.enabled && hasAutoInjected) {
+        console.log('✅ Periodic check: auto-injection already performed, skipping');
+        return;
+      }
+      console.log('🔍 New chat detected without button, adding...');
+      addInjectButtons(false, true); // Don't force cleanup, skip new chat check
+    } else if (!isNewChat && existingButtons > 0) {
+      console.log('📝 Not in new chat but buttons exist, scheduling gentle removal...');
+      removeAllInjectButtons('periodic check - not new chat', false); // Don't force immediate removal
+    } else {
+      console.log('✅ Periodic check: state is correct');
     }
-    cleanupButtons();
-  }, 5000);
+  }, 20000); // Reduced frequency to every 20 seconds
 }
 
 // Start when DOM is ready
