@@ -49,9 +49,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           if (!subprofiles.length) subprofiles = await loadSubprofilesFromStorage();
           if (!activeSubprofileId) activeSubprofileId = await loadActiveSubprofileId();
           
+          // Load personal description and add it to profile
+          const personalDescriptionData = await chrome.storage.local.get(['personalDescription']);
+          const enrichedProfile = {
+            ...profile,
+            personalDescription: personalDescriptionData.personalDescription || null
+          };
+          
           const effectiveProfile = activeSubprofileId 
-            ? await generateSubprofileData(profile, activeSubprofileId, subprofiles)
-            : profile;
+            ? await generateSubprofileData(enrichedProfile, activeSubprofileId, subprofiles)
+            : enrichedProfile;
           const text = generateInsertionText(msg.selection ?? { kind: 'compact' }, effectiveProfile);
           sendResponse({ ok: true, text });
           break;
@@ -185,6 +192,11 @@ async function generateSubprofileData(fullProfile, subprofileId, subprofiles) {
   
   const { includedFields } = subprofile;
   const filteredProfile = { version: fullProfile.version };
+  
+  // Always include personal description in subprofiles (core user information)
+  if (fullProfile.personalDescription) {
+    filteredProfile.personalDescription = fullProfile.personalDescription;
+  }
   
   // Filter identity fields
   if (includedFields.identity) {
@@ -371,6 +383,9 @@ function buildSelectedChunks(profile, fields) {
 
 function buildProfileChunks(profile) {
   const parts = [];
+  
+  // Personal description (prioritized at the top)
+  if (profile?.personalDescription) parts.push(`About me: ${profile.personalDescription}`);
   
   // Identity information
   if (profile?.identity?.displayName) parts.push(`Name: ${profile.identity.displayName}`);

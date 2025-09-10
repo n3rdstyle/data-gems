@@ -975,6 +975,46 @@ button:focus-visible {
   margin: 0 0 16px 0;
 }
 
+.description-section {
+  margin-bottom: 24px;
+}
+
+.description-section h3 {
+  font-size: 16px;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+  margin: 0 0 12px 0;
+}
+
+.personal-description-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  background: var(--input-background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  font-size: 14px;
+  font-family: var(--font-family);
+  color: var(--foreground);
+  resize: vertical;
+  transition: all 0.2s ease;
+  line-height: 1.4;
+}
+
+.personal-description-textarea:hover {
+  border-color: var(--foreground);
+}
+
+.personal-description-textarea:focus {
+  outline: none;
+  border: 2px solid var(--primary);
+  padding: 11px;
+}
+
+.personal-description-textarea::placeholder {
+  color: var(--muted-foreground);
+}
+
 .privacy-link {
   display: inline-flex;
   align-items: center;
@@ -1155,6 +1195,13 @@ button:focus-visible {
   outline: none;
   border: 2px solid var(--primary);
   padding: 7px 11px;
+}
+
+.subprofile-form-help {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  line-height: 1.4;
 }
 
 .subprofile-section-title {

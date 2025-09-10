@@ -37,6 +37,7 @@ const elements = {
   closeSubprofileModal: document.getElementById('closeSubprofileModal'),
   customSubprofileForm: document.getElementById('customSubprofileForm'),
   subprofileName: document.getElementById('subprofileName'),
+  subprofileCategorySelect: document.getElementById('subprofileCategorySelect'),
   dataSelectionContainer: document.getElementById('dataSelectionContainer'),
   cancelSubprofileBtn: document.getElementById('cancelSubprofileBtn'),
   createSubprofileBtn: document.getElementById('createSubprofileBtn'),
@@ -47,6 +48,7 @@ const elements = {
   profileImageInput: document.getElementById('profileImageInput'),
   uploadImageBtn: document.getElementById('uploadImageBtn'),
   removeImageBtn: document.getElementById('removeImageBtn'),
+  personalDescription: document.getElementById('personalDescription'),
   privacyLink: document.getElementById('privacyLink'),
   
   // Edit Modal
@@ -54,6 +56,8 @@ const elements = {
   closeEditModal: document.getElementById('closeEditModal'),
   editItemForm: document.getElementById('editItemForm'),
   editCategory: document.getElementById('editCategory'),
+  customCategoryGroup: document.getElementById('customCategoryGroup'),
+  customCategory: document.getElementById('customCategory'),
   editQuestion: document.getElementById('editQuestion'),
   editAnswer: document.getElementById('editAnswer'),
   favoriteBtn: document.getElementById('favoriteBtn'),
@@ -69,6 +73,8 @@ const elements = {
   formTitle: document.getElementById('formTitle'),
   formSubtitle: document.getElementById('formSubtitle'),
   categorySelect: document.getElementById('categorySelect'),
+  mainCustomCategoryGroup: document.getElementById('mainCustomCategoryGroup'),
+  mainCustomCategory: document.getElementById('mainCustomCategory'),
   questionInput: document.getElementById('questionInput'),
   answerInput: document.getElementById('answerInput'),
   saveButtonText: document.getElementById('saveButtonText'),
@@ -109,6 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
   // updateUI() is already called in loadItems(), no need to call it again
   loadProfileImage(); // Load profile image after DOM is ready
+  loadPersonalDescription(); // Load personal description after DOM is ready
 });
 
 // Load items from chrome.storage
@@ -432,9 +439,19 @@ function handleDelete(id) {
 function handleSubmit(e) {
   e.preventDefault();
   
-  const category = elements.categorySelect.value;
+  let category = elements.categorySelect.value;
   const question = elements.questionInput.value.trim();
   const answer = elements.answerInput.value.trim();
+  
+  // Handle custom category
+  if (category === 'Other') {
+    const customCategory = elements.mainCustomCategory.value.trim();
+    if (!customCategory) {
+      showNotification('Please enter a custom category name', 'error');
+      return;
+    }
+    category = customCategory;
+  }
   
   if (!question || !answer) {
     showNotification('Please fill in all fields', 'error');
@@ -482,8 +499,25 @@ function handleSubmit(e) {
 }
 
 // Handle export
-function handleExport() {
-  const dataStr = JSON.stringify(contextItems, null, 2);
+async function handleExport() {
+  // Load personal description from storage
+  const personalDescriptionData = await chrome.storage.local.get(['personalDescription']);
+  
+  // Create comprehensive export data
+  const exportData = {
+    version: '2.1',
+    exportedAt: new Date().toISOString(),
+    personalDescription: personalDescriptionData.personalDescription || null,
+    contextItems: contextItems,
+    // Include metadata
+    metadata: {
+      totalItems: contextItems.length,
+      categories: [...new Set(contextItems.map(item => item.category))],
+      hasPersonalDescription: !!personalDescriptionData.personalDescription
+    }
+  };
+  
+  const dataStr = JSON.stringify(exportData, null, 2);
   const blob = new Blob([dataStr], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   
@@ -513,8 +547,26 @@ function handleImport() {
           const imported = JSON.parse(e.target.result);
           let itemsToImport = [];
           
+          // Handle new format (v2.1 with personal description)
+          if (imported.version === '2.1' && imported.contextItems) {
+            // Import personal description if present
+            if (imported.personalDescription) {
+              chrome.storage.local.set({ personalDescription: imported.personalDescription });
+              // Update UI if personal description textarea exists
+              if (elements.personalDescription) {
+                elements.personalDescription.value = imported.personalDescription;
+              }
+            }
+            // Import context items
+            itemsToImport = imported.contextItems.map(item => ({
+              ...item,
+              id: item.id || generateId(),
+              createdAt: new Date(item.createdAt || Date.now()),
+              updatedAt: new Date(item.updatedAt || Date.now())
+            }));
+          }
           // Handle array format (original format)
-          if (Array.isArray(imported)) {
+          else if (Array.isArray(imported)) {
             itemsToImport = imported.map(item => ({
               ...item,
               id: item.id || generateId(),
@@ -609,6 +661,7 @@ function setupEventListeners() {
   elements.uploadImageBtn.addEventListener('click', () => elements.profileImageInput.click());
   elements.profileImageInput.addEventListener('change', handleImageUpload);
   elements.removeImageBtn.addEventListener('click', removeProfileImage);
+  elements.personalDescription.addEventListener('input', handlePersonalDescriptionChange);
   elements.privacyLink.addEventListener('click', openPrivacyStatement);
   
   // Close modal on outside click
@@ -685,8 +738,20 @@ function setupEventListeners() {
     isAddingItem = false;
     editingItem = null;
     elements.contextForm.reset();
+    // Hide custom category field when canceling
+    if (elements.mainCustomCategoryGroup) {
+      elements.mainCustomCategoryGroup.style.display = 'none';
+    }
     updateUI();
   });
+  
+  // Category selection handlers
+  if (elements.categorySelect) {
+    elements.categorySelect.addEventListener('change', handleMainCategoryChange);
+  }
+  if (elements.editCategory) {
+    elements.editCategory.addEventListener('change', handleEditCategoryChange);
+  }
   
   // Subprofile selector
   if (elements.subprofileSelector) {
@@ -729,6 +794,36 @@ function setupEventListeners() {
   if (elements.customSubprofileForm) {
     elements.customSubprofileForm.addEventListener('submit', handleCustomSubprofileCreation);
   }
+  
+  // Category selection for subprofiles
+  if (elements.subprofileCategorySelect) {
+    elements.subprofileCategorySelect.addEventListener('change', handleCategorySelection);
+  }
+}
+
+// Category selection handlers
+function handleMainCategoryChange(e) {
+  const selectedCategory = e.target.value;
+  if (selectedCategory === 'Other') {
+    elements.mainCustomCategoryGroup.style.display = 'block';
+    elements.mainCustomCategory.required = true;
+  } else {
+    elements.mainCustomCategoryGroup.style.display = 'none';
+    elements.mainCustomCategory.required = false;
+    elements.mainCustomCategory.value = '';
+  }
+}
+
+function handleEditCategoryChange(e) {
+  const selectedCategory = e.target.value;
+  if (selectedCategory === 'Other') {
+    elements.customCategoryGroup.style.display = 'block';
+    elements.customCategory.required = true;
+  } else {
+    elements.customCategoryGroup.style.display = 'none';
+    elements.customCategory.required = false;
+    elements.customCategory.value = '';
+  }
 }
 
 // Utility functions
@@ -755,8 +850,8 @@ async function insertContextToPage() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return;
   
-  // Build context text from items
-  const contextText = buildContextText();
+  // Build context text from items (now async)
+  const contextText = await buildContextText();
   
   if (contextText) {
     // Ensure content script is injected
@@ -783,9 +878,20 @@ async function insertContextToPage() {
 }
 
 // Build context text from items
-function buildContextText() {
+async function buildContextText() {
+  // Load personal description from storage
+  const personalDescriptionData = await chrome.storage.local.get(['personalDescription']);
+  
+  let text = '# Personal Context\n\n';
+  
+  // Add personal description at the top if available
+  if (personalDescriptionData.personalDescription) {
+    text += `## About Me\n${personalDescriptionData.personalDescription}\n\n`;
+  }
+  
   if (contextItems.length === 0) {
-    return '';
+    // Return text with just personal description if no context items
+    return personalDescriptionData.personalDescription ? text : '';
   }
   
   const grouped = contextItems.reduce((acc, item) => {
@@ -795,8 +901,6 @@ function buildContextText() {
     acc[item.category].push(item);
     return acc;
   }, {});
-  
-  let text = '# Personal Context\n\n';
   
   Object.entries(grouped).forEach(([category, items]) => {
     text += `## ${category}\n`;
@@ -813,6 +917,7 @@ function buildContextText() {
 function openProfileModal() {
   elements.profileModal.style.display = 'flex';
   loadProfileImage();
+  loadPersonalDescription();
 }
 
 function closeProfileModal() {
@@ -865,6 +970,25 @@ function loadProfileImage() {
   });
 }
 
+function handlePersonalDescriptionChange(e) {
+  const description = e.target.value;
+  // Auto-save with a small debounce to avoid excessive storage writes
+  clearTimeout(window.descriptionSaveTimeout);
+  window.descriptionSaveTimeout = setTimeout(() => {
+    chrome.storage.local.set({ personalDescription: description }, () => {
+      console.log('Personal description saved');
+    });
+  }, 500);
+}
+
+function loadPersonalDescription() {
+  chrome.storage.local.get(['personalDescription'], (result) => {
+    if (result.personalDescription && elements.personalDescription) {
+      elements.personalDescription.value = result.personalDescription;
+    }
+  });
+}
+
 function openPrivacyStatement(e) {
   e.preventDefault();
   // Open the privacy statement in a new tab
@@ -877,8 +1001,28 @@ function openPrivacyStatement(e) {
 function openEditModal(item) {
   currentEditingItem = item;
   
-  // Populate form fields
-  elements.editCategory.value = item.category;
+  // Check if the item's category is a predefined one
+  const predefinedCategories = [
+    'Hobbies', 'Food & Drink', 'Entertainment & Media', 'Travel & Activities',
+    'Lifestyle & Preferences', 'Work & Professional', 'Technology & Communication',
+    'Transportation', 'Social & Personal', 'Weather & Environment'
+  ];
+  
+  if (predefinedCategories.includes(item.category)) {
+    // Standard category - select it in dropdown
+    elements.editCategory.value = item.category;
+    elements.customCategoryGroup.style.display = 'none';
+    elements.customCategory.required = false;
+    elements.customCategory.value = '';
+  } else {
+    // Custom category - select "Other" and show custom field
+    elements.editCategory.value = 'Other';
+    elements.customCategoryGroup.style.display = 'block';
+    elements.customCategory.required = true;
+    elements.customCategory.value = item.category;
+  }
+  
+  // Populate other form fields
   elements.editQuestion.value = item.question;
   elements.editAnswer.value = item.answer;
   
@@ -893,6 +1037,9 @@ function closeEditModal() {
   elements.editModal.style.display = 'none';
   currentEditingItem = null;
   elements.editItemForm.reset();
+  // Hide custom category field
+  elements.customCategoryGroup.style.display = 'none';
+  elements.customCategory.required = false;
 }
 
 function updateFavoriteButton(isFavorite) {
@@ -949,14 +1096,26 @@ function deleteCurrentItem() {
 function saveEditedItem() {
   if (!currentEditingItem) return;
   
+  let category = elements.editCategory.value;
+  
+  // Handle custom category
+  if (category === 'Other') {
+    const customCategory = elements.customCategory.value.trim();
+    if (!customCategory) {
+      showNotification('Please enter a custom category name', 'error');
+      return;
+    }
+    category = customCategory;
+  }
+  
   // Validate form
-  if (!elements.editCategory.value || !elements.editQuestion.value.trim() || !elements.editAnswer.value.trim()) {
+  if (!category || !elements.editQuestion.value.trim() || !elements.editAnswer.value.trim()) {
     showNotification('Please fill in all fields', 'error');
     return;
   }
   
   // Update the item
-  currentEditingItem.category = elements.editCategory.value;
+  currentEditingItem.category = category;
   currentEditingItem.question = elements.editQuestion.value.trim();
   currentEditingItem.answer = elements.editAnswer.value.trim();
   currentEditingItem.updatedAt = new Date();
@@ -1020,6 +1179,59 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Custom Subprofile Creation Modal Functions
+// Update subprofile category selector with custom categories
+async function updateSubprofileCategoryOptions() {
+  if (!elements.subprofileCategorySelect) return;
+  
+  // Get all unique categories from context items
+  const result = await chrome.storage.local.get(['contextItems']);
+  const contextItems = result.contextItems || [];
+  
+  const predefinedCategories = [
+    { value: 'Hobbies', label: '🎯 Hobbies' },
+    { value: 'Food & Drink', label: '🍽️ Food & Drink' },
+    { value: 'Entertainment & Media', label: '🎬 Entertainment & Media' },
+    { value: 'Travel & Activities', label: '✈️ Travel & Activities' },
+    { value: 'Lifestyle & Preferences', label: '💜 Lifestyle & Preferences' },
+    { value: 'Work & Professional', label: '💼 Work & Professional' },
+    { value: 'Technology & Communication', label: '📱 Technology & Communication' },
+    { value: 'Transportation', label: '🚗 Transportation' },
+    { value: 'Social & Personal', label: '👥 Social & Personal' },
+    { value: 'Weather & Environment', label: '☀️ Weather & Environment' }
+  ];
+  
+  // Get all unique categories from items
+  const allCategories = [...new Set(contextItems.map(item => item.category))];
+  
+  // Find custom categories (not in predefined list)
+  const predefinedValues = predefinedCategories.map(cat => cat.value);
+  const customCategories = allCategories.filter(cat => !predefinedValues.includes(cat));
+  
+  // Clear existing options except the first one
+  const selector = elements.subprofileCategorySelect;
+  while (selector.children.length > 1) {
+    selector.removeChild(selector.lastChild);
+  }
+  
+  // Add predefined categories
+  predefinedCategories.forEach(category => {
+    if (allCategories.includes(category.value)) {
+      const option = document.createElement('option');
+      option.value = category.value;
+      option.textContent = category.label;
+      selector.appendChild(option);
+    }
+  });
+  
+  // Add custom categories
+  customCategories.forEach(category => {
+    const option = document.createElement('option');
+    option.value = category;
+    option.textContent = `📝 ${category}`;
+    selector.appendChild(option);
+  });
+}
+
 async function openSubprofileCreationModal(subprofileToEdit = null) {
   console.log('🎯 Opening subprofile modal:', {
     subprofileToEdit: subprofileToEdit,
@@ -1040,6 +1252,14 @@ async function openSubprofileCreationModal(subprofileToEdit = null) {
   
   // Reset form or populate with existing data
   elements.customSubprofileForm.reset();
+  
+  // Update category options with custom categories
+  await updateSubprofileCategoryOptions();
+  
+  // Reset category selector to default
+  if (elements.subprofileCategorySelect) {
+    elements.subprofileCategorySelect.value = '';
+  }
   
   if (subprofileToEdit) {
     // Editing mode - populate with existing data
@@ -1070,6 +1290,64 @@ function closeSubprofileCreationModal() {
   
   // Clear editing state
   window.editingSubprofile = null;
+}
+
+// Handle category selection in subprofile creation
+async function handleCategorySelection(e) {
+  const selectedCategory = e.target.value;
+  
+  if (!selectedCategory) {
+    // If no category selected, just refresh the data selection to show all items
+    await populateDataSelection(window.editingSubprofile);
+    return;
+  }
+  
+  console.log('🏷️ Category selected:', selectedCategory);
+  
+  // Wait for data selection to be populated, then auto-select category items
+  setTimeout(async () => {
+    await selectCategoryItems(selectedCategory);
+  }, 100);
+}
+
+// Auto-select all items from a specific category
+async function selectCategoryItems(category) {
+  console.log('🎯 Auto-selecting items from category:', category);
+  
+  // Load context items first
+  const result = await chrome.storage.local.get(['contextItems']);
+  const contextItems = result.contextItems || [];
+  
+  // Find all checkboxes in the data selection container
+  const container = elements.dataSelectionContainer;
+  const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+  
+  let selectedCount = 0;
+  
+  checkboxes.forEach(checkbox => {
+    // For context items, the name attribute is "contextItems" and value contains the item ID
+    const nameAttr = checkbox.getAttribute('name');
+    const itemId = checkbox.getAttribute('value');
+    
+    // Check if this is a context item from the selected category
+    if (nameAttr === 'contextItems' && itemId) {
+      // Find the actual context item to check its category
+      const item = contextItems.find(item => item.id === itemId);
+      
+      if (item && item.category === category) {
+        checkbox.checked = true;
+        selectedCount++;
+        console.log('✅ Selected item:', item.question);
+      }
+    }
+  });
+  
+  // Show notification about auto-selection
+  if (selectedCount > 0) {
+    showNotification(`Auto-selected ${selectedCount} items from ${category} category`);
+  } else {
+    showNotification(`No items found in ${category} category`);
+  }
 }
 
 async function populateDataSelection(subprofileToEdit = null) {

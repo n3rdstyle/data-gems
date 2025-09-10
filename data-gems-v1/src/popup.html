@@ -118,6 +118,10 @@
               <option value="Other">Other</option>
             </select>
           </div>
+          <div class="form-group" id="mainCustomCategoryGroup" style="display: none;">
+            <label class="form-label">Custom Category Name</label>
+            <input type="text" id="mainCustomCategory" class="form-input" placeholder="Enter your custom category name">
+          </div>
           <div class="form-group">
             <label class="form-label">Topic</label>
             <input type="text" id="questionInput" class="form-input" placeholder="e.g., Favorite type of music">
@@ -216,6 +220,10 @@
               </div>
             </div>
           </div>
+          <div class="description-section">
+            <h3>Personal Description</h3>
+            <textarea id="personalDescription" class="personal-description-textarea" placeholder="Tell us about yourself... (e.g., your interests, preferences, or anything that helps personalize your AI interactions)"></textarea>
+          </div>
           <div class="privacy-section">
             <h3>Privacy & Data</h3>
             <p class="privacy-text">Your profile data is stored locally on your device and never shared with external services.</p>
@@ -259,7 +267,12 @@
                 <option value="Transportation">🚗 Transportation</option>
                 <option value="Social & Personal">👥 Social & Personal</option>
                 <option value="Weather & Environment">☀️ Weather & Environment</option>
+                <option value="Other">📝 Other</option>
               </select>
+            </div>
+            <div class="form-group" id="customCategoryGroup" style="display: none;">
+              <label for="customCategory">Custom Category Name</label>
+              <input type="text" id="customCategory" class="form-input" placeholder="Enter your custom category name">
             </div>
             <div class="form-group">
               <label for="editQuestion">Question</label>
@@ -310,6 +323,25 @@
             <div class="subprofile-form-section">
               <label class="subprofile-form-label">Name Your Subprofile</label>
               <input type="text" id="subprofileName" class="subprofile-form-input" placeholder="e.g., Work Mode, Creative Projects, etc." maxlength="50" required>
+            </div>
+            
+            <!-- Category Selection Section -->
+            <div class="subprofile-form-section">
+              <label class="subprofile-form-label">Quick Select by Category (Optional)</label>
+              <select id="subprofileCategorySelect" class="subprofile-form-input">
+                <option value="">Select a category to auto-select all items...</option>
+                <option value="Hobbies">🎯 Hobbies</option>
+                <option value="Food & Drink">🍽️ Food & Drink</option>
+                <option value="Entertainment & Media">🎬 Entertainment & Media</option>
+                <option value="Travel & Activities">✈️ Travel & Activities</option>
+                <option value="Lifestyle & Preferences">💜 Lifestyle & Preferences</option>
+                <option value="Work & Professional">💼 Work & Professional</option>
+                <option value="Technology & Communication">📱 Technology & Communication</option>
+                <option value="Transportation">🚗 Transportation</option>
+                <option value="Social & Personal">👥 Social & Personal</option>
+                <option value="Weather & Environment">☀️ Weather & Environment</option>
+              </select>
+              <p class="subprofile-form-help">Choose a category to automatically select all items from that category, or leave blank to manually select individual items below.</p>
             </div>
             
             <!-- Data Selection Section -->

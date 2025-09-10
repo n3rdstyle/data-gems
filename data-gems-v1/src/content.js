@@ -549,6 +549,11 @@ async function injectProfile(button, subprofileId = null) {
   
   try {
     let contextItems = [];
+    let personalDescription = null;
+    
+    // Get personal description from storage
+    const personalDescData = await chrome.storage.local.get(['personalDescription']);
+    personalDescription = personalDescData.personalDescription || null;
     
     if (subprofileId) {
       // Get subprofile data
@@ -573,7 +578,7 @@ async function injectProfile(button, subprofileId = null) {
       console.log('Found full profile context items:', contextItems.length);
     }
     
-    if (contextItems.length === 0) {
+    if (contextItems.length === 0 && !personalDescription) {
       const noDataText = subprofileId ? 'Subprofile empty' : 'No profile data';
       button.querySelector('span').textContent = noDataText;
       setTimeout(() => {
@@ -583,10 +588,11 @@ async function injectProfile(button, subprofileId = null) {
       return;
     }
     
-    // Create profile JSON
+    // Create profile JSON with structured data including personal description
     const profileData = {
-      version: "1.0",
+      version: "2.1",
       timestamp: new Date().toISOString(),
+      personalDescription: personalDescription,
       categories: {},
       totalItems: contextItems.length
     };
@@ -1041,10 +1047,15 @@ async function autoInjectProfile() {
 
 // Perform direct file injection (for auto-injection) - same as manual injection
 async function performDirectInjection(inputElement, subprofileId = null) {
-  console.log('📎 Performing direct file injection...', subprofileId ? `Subprofile: ${subprofileId}` : 'Full profile');
+  console.log('📎 Performing direct injection...', subprofileId ? `Subprofile: ${subprofileId}` : 'Full profile');
   
   try {
     let contextItems = [];
+    let personalDescription = null;
+    
+    // Get personal description from storage
+    const personalDescData = await chrome.storage.local.get(['personalDescription']);
+    personalDescription = personalDescData.personalDescription || null;
     
     if (subprofileId) {
       // Get subprofile data
@@ -1068,15 +1079,16 @@ async function performDirectInjection(inputElement, subprofileId = null) {
       console.log('Found full profile context items:', contextItems.length);
     }
     
-    if (contextItems.length === 0) {
+    if (contextItems.length === 0 && !personalDescription) {
       console.log('⚠️ No profile data to inject');
       return;
     }
     
-    // Create profile JSON (same format as manual injection)
+    // Create profile JSON with structured data including personal description
     const profileData = {
-      version: "1.0",
+      version: "2.1",
       timestamp: new Date().toISOString(),
+      personalDescription: personalDescription,
       categories: {},
       totalItems: contextItems.length
     };
