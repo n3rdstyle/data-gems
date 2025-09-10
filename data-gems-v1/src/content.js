@@ -1,4 +1,9 @@
+console.log('🚀 DATA GEMS CONTENT SCRIPT LOADED!!! 🚀');
 console.log('Prompt Profile Injector: Content script loaded on', window.location.hostname);
+console.log('🌍 Current URL:', window.location.href);
+console.log('📅 Script loaded at:', new Date().toISOString());
+
+// Content script is running - ready for /prompt command!
 
 // Configuration for different AI platforms
 const AI_PLATFORMS = {
@@ -48,6 +53,23 @@ let autoInjectTimeouts = new Set();
 
 // Simple one-time auto-injection flag
 let hasAutoInjected = false;
+
+// Prompt command functionality
+let promptLibrary = [];
+
+// Load prompt library from storage
+async function loadPromptLibrary() {
+  try {
+    console.log('📥 Loading prompt library from storage...');
+    const result = await chrome.storage.local.get(['promptLibrary']);
+    promptLibrary = result.promptLibrary || [];
+    console.log('📚 Loaded prompt library:', promptLibrary.length, 'prompts');
+    console.log('📚 Prompt library contents:', promptLibrary);
+  } catch (error) {
+    console.error('❌ Failed to load prompt library:', error);
+    promptLibrary = [];
+  }
+}
 
 // Create the inject button with dropdown
 function createInjectButton() {
@@ -206,6 +228,76 @@ function createInjectButton() {
         .prompt-profile-inject-btn {
           /* No special shadow for dark mode */
         }
+      }
+      
+      /* Prompt Command Dropdown Styles */
+      .prompt-command-dropdown {
+        position: fixed !important;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        z-index: 999999 !important;
+        min-width: 300px;
+        max-width: 400px;
+        max-height: 300px;
+        overflow-y: auto;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      
+      .prompt-command-header {
+        padding: 8px 12px;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+        font-size: 11px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      
+      .prompt-command-item {
+        padding: 10px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background-color 0.15s ease;
+      }
+      
+      .prompt-command-item:hover {
+        background: #f3f4f6;
+      }
+      
+      .prompt-command-item.selected {
+        background: #e0f2fe;
+      }
+      
+      .prompt-command-item:last-child {
+        border-bottom: none;
+      }
+      
+      .prompt-command-name {
+        font-weight: 500;
+        color: #1f2937;
+        font-size: 13px;
+        margin-bottom: 2px;
+      }
+      
+      .prompt-command-preview {
+        font-size: 11px;
+        color: #6b7280;
+        line-height: 1.4;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+      
+      .prompt-command-empty {
+        padding: 16px;
+        text-align: center;
+        color: #6b7280;
+        font-size: 12px;
       }
     `;
     document.head.appendChild(style);
@@ -1338,6 +1430,19 @@ function addInjectButtons(forceCleanup = false, skipNewChatCheck = false) {
       console.log('🧹 Removing buttons - auto-injection is enabled');
       removeAllInjectButtons('auto-injection enabled', true);
     }
+    
+    // BUT STILL SET UP /prompt COMMAND LISTENERS on all inputs!
+    console.log('⚡ Setting up /prompt command listeners even with auto-injection enabled...');
+    const autoInjectionInputs = document.querySelectorAll(config.selector);
+    autoInjectionInputs.forEach(input => {
+      // Check if we already set up prompt listeners for this input
+      if (!input.hasPromptListener) {
+        console.log('🎧 Setting up /prompt command listener for input:', input);
+        setupPromptCommandListener(input);
+        input.hasPromptListener = true; // Mark to avoid duplicate setup
+      }
+    });
+    
     // Trigger auto-injection
     console.log('📍 CALLER: addInjectButtons() triggering autoInjectProfile');
     autoInjectProfile();
@@ -1373,6 +1478,10 @@ function addInjectButtons(forceCleanup = false, skipNewChatCheck = false) {
       console.log('Skipping: Button already exists for this input');
       return;
     }
+    
+    // Set up prompt command listener for this input
+    console.log('🎧 Setting up /prompt command listener for input:', input);
+    setupPromptCommandListener(input);
     
     // Skip small inputs (likely not for prompts) - but be more lenient for contenteditable
     const rect = input.getBoundingClientRect();
@@ -1807,10 +1916,15 @@ chrome.runtime.onMessage.addListener((msg, _sender, _sendResponse) => {
 
 // Initialize and monitor for changes
 async function initialize() {
-  console.log('Initializing Prompt Profile Injector...');
+  console.log('🚀 Initializing Prompt Profile Injector...');
+  console.log('🌐 Current hostname:', window.location.hostname);
   
   // Load auto-injection settings
   await loadAutoInjectSettings();
+  
+  // Load prompt library for /prompt command
+  await loadPromptLibrary();
+  console.log('✅ Initialization complete - /prompt command ready!');
   
   // Wait a bit for dynamic content to load
   setTimeout(() => {
@@ -1944,6 +2058,488 @@ async function initialize() {
     }
   }, 20000); // Reduced frequency to every 20 seconds
 }
+
+// Prompt Command Functionality
+function createPromptDropdown(inputElement, prompts) {
+  const dropdown = document.createElement('div');
+  dropdown.className = 'prompt-command-dropdown';
+  dropdown.style.position = 'fixed';
+  dropdown.style.display = 'none';
+  
+  if (prompts.length === 0) {
+    dropdown.innerHTML = `
+      <div class="prompt-command-empty">
+        No prompts saved yet. Create prompts in the extension's Beta Lab.
+      </div>
+    `;
+  } else {
+    dropdown.innerHTML = `
+      <div class="prompt-command-header">Choose a prompt</div>
+      ${prompts.map((prompt, index) => `
+        <div class="prompt-command-item" data-prompt-id="${prompt.id}" data-index="${index}">
+          <div class="prompt-command-name">${escapeHtml(prompt.name)}</div>
+          <div class="prompt-command-preview">${escapeHtml(prompt.text.substring(0, 150))}${prompt.text.length > 150 ? '...' : ''}</div>
+        </div>
+      `).join('')}
+    `;
+  }
+  
+  // Position the dropdown (fixed positioning relative to viewport)
+  const rect = inputElement.getBoundingClientRect();
+  
+  dropdown.style.left = rect.left + 'px';
+  dropdown.style.top = (rect.bottom + 5) + 'px';
+  
+  console.log('📍 Dropdown positioned at:', {
+    left: rect.left + 'px',
+    top: (rect.bottom + 5) + 'px',
+    inputRect: rect
+  });
+  
+  // Add click handlers
+  dropdown.addEventListener('click', (e) => {
+    const item = e.target.closest('.prompt-command-item');
+    if (item) {
+      const promptId = item.dataset.promptId;
+      const prompt = prompts.find(p => p.id === promptId);
+      if (prompt) {
+        insertPromptText(inputElement, prompt.text);
+        hidePromptDropdown();
+      }
+    }
+  });
+  
+  document.body.appendChild(dropdown);
+  return dropdown;
+}
+
+async function showPromptDropdown(inputElement) {
+  console.log('🎪 showPromptDropdown called');
+  console.log('📚 Current prompt library:', promptLibrary);
+  
+  // Load prompt library if not already loaded
+  if (promptLibrary.length === 0) {
+    console.log('📚 Prompt library empty, attempting to load...');
+    await loadPromptLibrary();
+    console.log('📚 After loading, prompt library has:', promptLibrary.length, 'prompts');
+  }
+  
+  // Hide any existing dropdown
+  hidePromptDropdown();
+  
+  // Create new dropdown
+  console.log('🎨 Creating dropdown with', promptLibrary.length, 'prompts');
+  activePromptDropdown = createPromptDropdown(inputElement, promptLibrary);
+  activePromptDropdown.style.display = 'block';
+  console.log('✅ Dropdown created and displayed');
+  
+  // Add keyboard navigation
+  let selectedIndex = -1;
+  const items = activePromptDropdown.querySelectorAll('.prompt-command-item');
+  
+  function updateSelection() {
+    items.forEach((item, index) => {
+      item.classList.toggle('selected', index === selectedIndex);
+    });
+  }
+  
+  function handleKeydown(e) {
+    if (!activePromptDropdown || activePromptDropdown.style.display === 'none') {
+      document.removeEventListener('keydown', handleKeydown);
+      return;
+    }
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+        updateSelection();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        selectedIndex = Math.max(selectedIndex - 1, -1);
+        updateSelection();
+        break;
+      case 'Enter':
+        if (selectedIndex >= 0 && items[selectedIndex]) {
+          e.preventDefault();
+          items[selectedIndex].click();
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        hidePromptDropdown();
+        break;
+    }
+  }
+  
+  document.addEventListener('keydown', handleKeydown);
+  
+  // Hide dropdown when clicking outside
+  setTimeout(() => {
+    document.addEventListener('click', function hideOnClickOutside(e) {
+      if (activePromptDropdown && !activePromptDropdown.contains(e.target)) {
+        hidePromptDropdown();
+        document.removeEventListener('click', hideOnClickOutside);
+      }
+    });
+  }, 100);
+}
+
+function hidePromptDropdown() {
+  if (activePromptDropdown) {
+    activePromptDropdown.remove();
+    activePromptDropdown = null;
+  }
+}
+
+function insertPromptText(inputElement, promptText) {
+  console.log('📝 Inserting prompt text:', promptText.substring(0, 100) + '...');
+  console.log('📝 Into input element:', inputElement);
+  
+  const isContentEditable = inputElement.contentEditable === 'true';
+  
+  if (isContentEditable) {
+    // For contenteditable elements (like Claude's ProseMirror)
+    inputElement.focus();
+    
+    try {
+      // Clear the current content completely and replace with prompt
+      inputElement.innerHTML = '';
+      
+      // Create a text node with the prompt content
+      const textNode = document.createTextNode(promptText);
+      inputElement.appendChild(textNode);
+      
+      // Move cursor to the end
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.setStartAfter(textNode);
+      range.setEndAfter(textNode);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      // Trigger comprehensive events to notify Claude's editor
+      const events = [
+        new Event('input', { bubbles: true, cancelable: true }),
+        new Event('change', { bubbles: true, cancelable: true }),
+        new KeyboardEvent('keyup', { bubbles: true, cancelable: true }),
+        new InputEvent('input', { bubbles: true, cancelable: true, inputType: 'insertText', data: promptText })
+      ];
+      
+      events.forEach(event => {
+        inputElement.dispatchEvent(event);
+      });
+      
+      console.log('✅ Prompt text inserted successfully using modern approach');
+      
+    } catch (error) {
+      console.log('❌ Modern approach failed, trying fallback:', error);
+      
+      // Fallback: use the clipboard approach
+      insertTextViaClipboard(inputElement, promptText);
+    }
+    
+  } else {
+    // For regular textarea/input elements
+    const currentText = inputElement.value || '';
+    const cursorPos = inputElement.selectionStart || 0;
+    const beforeCursor = currentText.substring(0, cursorPos);
+    const afterCursor = currentText.substring(cursorPos);
+    
+    // Find and replace the /prompt command if it exists
+    let beforePromptCommand = beforeCursor;
+    let afterPromptCommand = afterCursor;
+    
+    const promptIndex = beforeCursor.lastIndexOf('/prompt');
+    if (promptIndex !== -1) {
+      beforePromptCommand = beforeCursor.substring(0, promptIndex);
+      // Keep the afterCursor as is since /prompt should be at the cursor position
+    }
+    
+    const newText = beforePromptCommand + promptText + afterPromptCommand;
+    inputElement.value = newText;
+    
+    // Set cursor position after the inserted prompt
+    const newCursorPos = beforePromptCommand.length + promptText.length;
+    inputElement.setSelectionRange(newCursorPos, newCursorPos);
+    
+    // Trigger events
+    inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    inputElement.dispatchEvent(new Event('change', { bubbles: true }));
+    
+    console.log('✅ Prompt text inserted successfully into regular input');
+  }
+}
+
+function insertTextViaClipboard(inputElement, text) {
+  console.log('📋 Using clipboard approach to insert text');
+  
+  // Store original clipboard content
+  let originalClipboard = '';
+  
+  navigator.clipboard.readText().then(clipText => {
+    originalClipboard = clipText;
+  }).catch(() => {
+    console.log('Could not read original clipboard');
+  });
+  
+  // Write our text to clipboard
+  navigator.clipboard.writeText(text).then(() => {
+    // Focus the input
+    inputElement.focus();
+    
+    // Clear current content
+    inputElement.innerHTML = '';
+    
+    // Simulate Ctrl+V
+    const pasteEvent = new ClipboardEvent('paste', {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: new DataTransfer()
+    });
+    
+    // Add our text to the clipboard data
+    pasteEvent.clipboardData.setData('text/plain', text);
+    
+    inputElement.dispatchEvent(pasteEvent);
+    
+    // Restore original clipboard after a short delay
+    setTimeout(() => {
+      if (originalClipboard) {
+        navigator.clipboard.writeText(originalClipboard).catch(() => {
+          console.log('Could not restore original clipboard');
+        });
+      }
+    }, 100);
+    
+    console.log('✅ Text inserted via clipboard approach');
+    
+  }).catch(error => {
+    console.log('❌ Clipboard approach failed:', error);
+    
+    // Ultimate fallback: just set the content directly
+    inputElement.innerHTML = '';
+    inputElement.textContent = text;
+    
+    // Trigger events
+    const events = [
+      new Event('input', { bubbles: true }),
+      new Event('change', { bubbles: true })
+    ];
+    
+    events.forEach(event => inputElement.dispatchEvent(event));
+    
+    console.log('✅ Text inserted using direct content approach');
+  });
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function setupPromptCommandListener(inputElement) {
+  console.log('🎧 Setting up prompt command listener for input:', inputElement);
+  console.log('🔍 Input element details:', {
+    tagName: inputElement.tagName,
+    contentEditable: inputElement.contentEditable,
+    type: inputElement.type,
+    className: inputElement.className,
+    id: inputElement.id,
+    placeholder: inputElement.placeholder,
+    isConnected: inputElement.isConnected
+  });
+  
+  let lastValue = '';
+  
+  async function handleInput(event) {
+    console.log('🔥 INPUT EVENT FIRED! Type:', event.type, 'Target:', event.target, 'Current target:', event.currentTarget);
+    
+    const currentValue = inputElement.contentEditable === 'true' 
+      ? (inputElement.textContent || inputElement.innerText || '')
+      : (inputElement.value || '');
+    
+    console.log('📄 Current value:', `"${currentValue}"`);
+    console.log('📄 Last value:', `"${lastValue}"`);
+    
+    // Check if user typed "/prompt"
+    if (currentValue !== lastValue) {
+      console.log('🎯 VALUE CHANGED! Looking for /prompt command...');
+      const cursorPos = inputElement.contentEditable === 'true' 
+        ? getContentEditableCursorPosition(inputElement)
+        : inputElement.selectionStart || 0;
+      
+      console.log('📍 Cursor position:', cursorPos);
+      
+      // Look for "/prompt:tag" at the cursor position
+      const textBeforeCursor = currentValue.substring(0, cursorPos);
+      console.log('📍 Text before cursor:', `"${textBeforeCursor}"`);
+      
+      const promptCommandMatch = textBeforeCursor.match(/\/prompt:([a-zA-Z0-9\-_]+)$/i);
+      console.log('🎯 Prompt command match:', promptCommandMatch);
+      
+      if (promptCommandMatch) {
+        const tag = promptCommandMatch[1]; // Extract the required tag
+        console.log('✅ /prompt:tag command detected with tag:', tag);
+        
+        // Load prompt library if not already loaded
+        if (promptLibrary.length === 0) {
+          console.log('📚 Prompt library empty, attempting to load...');
+          await loadPromptLibrary();
+          console.log('📚 After loading, prompt library has:', promptLibrary.length, 'prompts');
+        }
+        
+        // Check if we have any prompts
+        if (promptLibrary.length > 0) {
+          // Find prompt by tag
+          const selectedPrompt = promptLibrary.find(p => p.tag && p.tag.toLowerCase() === tag.toLowerCase());
+          if (selectedPrompt) {
+            console.log('🎯 Found prompt by tag:', selectedPrompt.name);
+            
+            // Remove the "/prompt:tag" text first
+            const newValue = currentValue.replace(/\/prompt:[a-zA-Z0-9\-_]+$/i, '');
+            
+            // Set the new value without /prompt:tag
+            if (inputElement.contentEditable === 'true') {
+              inputElement.textContent = newValue;
+            } else {
+              inputElement.value = newValue;
+            }
+            
+            // Insert the selected prompt text
+            await insertPromptText(inputElement, selectedPrompt.text);
+            
+          } else {
+            console.log('❌ No prompt found with tag:', tag);
+            // Remove the "/prompt:tag" text even if no prompt found
+            const newValue = currentValue.replace(/\/prompt:[a-zA-Z0-9\-_]+$/i, '');
+            if (inputElement.contentEditable === 'true') {
+              inputElement.textContent = newValue;
+            } else {
+              inputElement.value = newValue;
+            }
+          }
+        } else {
+          console.log('❌ No prompts available in prompt library');
+          // Remove the "/prompt:tag" text even if no prompts available
+          const newValue = currentValue.replace(/\/prompt:[a-zA-Z0-9\-_]+$/i, '');
+          if (inputElement.contentEditable === 'true') {
+            inputElement.textContent = newValue;
+          } else {
+            inputElement.value = newValue;
+          }
+        }
+      }
+    } else {
+      console.log('📄 Value unchanged, no action needed');
+    }
+    
+    lastValue = currentValue;
+  }
+  
+  // Add multiple event types to catch all possible input events
+  const eventTypes = ['input', 'keyup', 'keydown', 'keypress', 'change', 'paste'];
+  
+  console.log('🔗 Adding event listeners to input element for events:', eventTypes);
+  
+  eventTypes.forEach(eventType => {
+    inputElement.addEventListener(eventType, (event) => {
+      console.log(`🎪 ${eventType.toUpperCase()} EVENT on input!`, event);
+      handleInput(event);
+    }, true); // Use capture phase
+  });
+  
+  // Test if events are working by adding a simple listener
+  inputElement.addEventListener('focus', (event) => {
+    console.log('🔍 INPUT FOCUSED! Ready for /prompt command', event);
+  }, true);
+  
+  inputElement.addEventListener('blur', (event) => {
+    console.log('😴 INPUT BLURRED!', event);
+  }, true);
+  
+  // Also try listening to the document for all input events to see what's actually happening
+  const documentListener = (event) => {
+    if (event.target === inputElement) {
+      console.log('📺 Document caught event on our input element:', event.type, event);
+    }
+  };
+  
+  eventTypes.forEach(eventType => {
+    document.addEventListener(eventType, documentListener, true);
+  });
+  
+  // Test if the input is still connected and functional
+  setTimeout(() => {
+    console.log('⏰ Testing input connection after 1 second:', {
+      isConnected: inputElement.isConnected,
+      parentElement: inputElement.parentElement,
+      value: inputElement.contentEditable === 'true' ? inputElement.textContent : inputElement.value
+    });
+  }, 1000);
+  
+  // Add a test function to manually trigger events
+  window.testPromptCommand = function() {
+    console.log('🧪 MANUAL TEST: Simulating /prompt input');
+    
+    // Set the value
+    if (inputElement.contentEditable === 'true') {
+      inputElement.textContent = '/prompt';
+    } else {
+      inputElement.value = '/prompt';
+    }
+    
+    // Trigger events manually
+    const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+    const keyupEvent = new KeyboardEvent('keyup', { key: 't', bubbles: true, cancelable: true });
+    
+    console.log('🧪 Dispatching events...');
+    inputElement.dispatchEvent(inputEvent);
+    inputElement.dispatchEvent(keyupEvent);
+    
+    console.log('🧪 Manual test complete');
+  };
+  
+  console.log('🧪 Added window.testPromptCommand() for manual testing');
+}
+
+function getContentEditableCursorPosition(element) {
+  let caretPos = 0;
+  const sel = window.getSelection();
+  if (sel.rangeCount) {
+    const range = sel.getRangeAt(0);
+    const preCaretRange = range.cloneRange();
+    preCaretRange.selectNodeContents(element);
+    preCaretRange.setEnd(range.endContainer, range.endOffset);
+    caretPos = preCaretRange.toString().length;
+  }
+  return caretPos;
+}
+
+// Debug function to test prompt command manually
+window.testPromptCommand = function() {
+  console.log('🧪 Testing prompt command functionality...');
+  console.log('📚 Current prompt library:', promptLibrary);
+  
+  // Find any input element on the page
+  const hostname = window.location.hostname;
+  const config = AI_PLATFORMS[hostname] || AI_PLATFORMS.default;
+  const inputs = document.querySelectorAll(config.selector);
+  
+  console.log('🔍 Found', inputs.length, 'input elements');
+  
+  if (inputs.length > 0) {
+    const input = inputs[0];
+    console.log('🎯 Testing with first input:', input);
+    
+    // Force show dropdown
+    showPromptDropdown(input);
+  } else {
+    console.log('❌ No input elements found to test with');
+  }
+};
 
 // Start when DOM is ready
 if (document.readyState === 'loading') {

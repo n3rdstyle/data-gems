@@ -94,10 +94,29 @@ const elements = {
   // Settings Modal
   settingsModal: document.getElementById('settingsModal'),
   closeSettingsModal: document.getElementById('closeSettingsModal'),
-  autoInjectToggle: document.getElementById('autoInjectToggle'),
-  autoInjectDelay: document.getElementById('autoInjectDelay'),
-  autoInjectDelayRow: document.getElementById('autoInjectDelayRow'),
-  currentAutoProfile: document.getElementById('currentAutoProfile'),
+  
+  // Beta Lab Elements
+  betaLabTeaser: document.getElementById('betaLabTeaser'),
+  betaLabModal: document.getElementById('betaLabModal'),
+  closeBetaLabModal: document.getElementById('closeBetaLabModal'),
+  betaAutoInjectToggle: document.getElementById('betaAutoInjectToggle'),
+  betaAutoInjectDelay: document.getElementById('betaAutoInjectDelay'),
+  betaAutoInjectSettings: document.getElementById('betaAutoInjectSettings'),
+  betaCurrentProfile: document.getElementById('betaCurrentProfile'),
+  promptLibraryBtn: document.getElementById('openPromptLibraryBtn'),
+  promptLibraryModal: document.getElementById('promptLibraryModal'),
+  closePromptLibraryModal: document.getElementById('closePromptLibraryModal'),
+  promptLibraryForm: document.getElementById('promptLibraryForm'),
+  promptName: document.getElementById('promptName'),
+  promptTag: document.getElementById('promptTag'),
+  promptText: document.getElementById('promptText'),
+  addPromptBtn: document.getElementById('addPromptBtn'),
+  promptForm: document.getElementById('promptForm'),
+  promptFormTitle: document.getElementById('promptFormTitle'),
+  savePromptBtn: document.getElementById('savePromptBtn'),
+  cancelPromptBtn: document.getElementById('cancelPromptBtn'),
+  promptsList: document.getElementById('promptLibraryContent'),
+  
   addBtn: document.getElementById('addBtn')
 };
 
@@ -109,6 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadItems();
   await loadSubprofiles();
   await loadAutoInjectSettings();
+  await loadPromptLibrary();
   // Load active subprofile ID
   const result = await chrome.storage.local.get(['activeSubprofileId']);
   activeSubprofileId = result.activeSubprofileId || null;
@@ -655,6 +675,60 @@ function setupEventListeners() {
   // Settings
   elements.settingsBtn.addEventListener('click', openSettingsModal);
   
+  // Beta Lab Event Listeners
+  if (elements.betaLabTeaser) {
+    elements.betaLabTeaser.addEventListener('click', openBetaLabModal);
+  }
+  
+  if (elements.closeBetaLabModal) {
+    elements.closeBetaLabModal.addEventListener('click', closeBetaLabModal);
+  }
+  
+  if (elements.betaAutoInjectToggle) {
+    elements.betaAutoInjectToggle.addEventListener('change', onBetaAutoInjectToggleChange);
+  }
+  
+  if (elements.betaAutoInjectDelay) {
+    elements.betaAutoInjectDelay.addEventListener('change', onBetaAutoInjectDelayChange);
+  }
+  
+  if (elements.promptLibraryBtn) {
+    elements.promptLibraryBtn.addEventListener('click', openPromptLibraryModal);
+  }
+  
+  if (elements.addPromptBtn) {
+    elements.addPromptBtn.addEventListener('click', showPromptForm);
+  }
+  
+  if (elements.closePromptLibraryModal) {
+    elements.closePromptLibraryModal.addEventListener('click', closePromptLibraryModal);
+  }
+  
+  if (elements.promptLibraryForm) {
+    elements.promptLibraryForm.addEventListener('submit', handleSavePrompt);
+  }
+  
+  if (elements.cancelPromptBtn) {
+    elements.cancelPromptBtn.addEventListener('click', hidePromptForm);
+  }
+  
+  // Close modals on outside click
+  if (elements.betaLabModal) {
+    elements.betaLabModal.addEventListener('click', (e) => {
+      if (e.target === elements.betaLabModal) {
+        closeBetaLabModal();
+      }
+    });
+  }
+  
+  if (elements.promptLibraryModal) {
+    elements.promptLibraryModal.addEventListener('click', (e) => {
+      if (e.target === elements.promptLibraryModal) {
+        closePromptLibraryModal();
+      }
+    });
+  }
+  
   // Profile Modal
   elements.profileAvatar.addEventListener('click', openProfileModal);
   elements.closeModal.addEventListener('click', closeProfileModal);
@@ -677,16 +751,6 @@ function setupEventListeners() {
   if (elements.closeSettingsModal) {
     elements.closeSettingsModal.addEventListener('click', closeSettingsModal);
     console.log('✅ Close settings modal listener added');
-  }
-  
-  if (elements.autoInjectToggle) {
-    elements.autoInjectToggle.addEventListener('change', onAutoInjectToggleChange);
-    console.log('✅ Auto inject toggle listener added');
-  }
-  
-  if (elements.autoInjectDelay) {
-    elements.autoInjectDelay.addEventListener('change', onAutoInjectDelayChange);
-    console.log('✅ Auto inject delay listener added');
   }
   
   // Close settings modal on outside click
@@ -1981,21 +2045,6 @@ async function saveAutoInjectSettings() {
 
 function openSettingsModal() {
   console.log('⚙️ Opening settings modal');
-  console.log('Current autoInjectSettings:', autoInjectSettings);
-  
-  // Update UI with current settings
-  elements.autoInjectToggle.checked = autoInjectSettings.enabled;
-  elements.autoInjectDelay.value = autoInjectSettings.delay.toString();
-  elements.autoInjectDelayRow.style.display = autoInjectSettings.enabled ? 'flex' : 'none';
-  
-  console.log('Set toggle to:', elements.autoInjectToggle.checked);
-  console.log('Set delay to:', elements.autoInjectDelay.value);
-  
-  // Update current profile display
-  const currentProfileText = activeSubprofileId 
-    ? subprofiles.find(s => s.id === activeSubprofileId)?.name || 'Unknown Subprofile'
-    : 'Full Profile';
-  elements.currentAutoProfile.textContent = currentProfileText;
   
   elements.settingsModal.style.display = 'flex';
   console.log('✅ Settings modal opened');
@@ -2006,31 +2055,304 @@ function closeSettingsModal() {
   console.log('Settings modal closed');
 }
 
-// Auto-save when toggle changes
-async function onAutoInjectToggleChange() {
-  console.log('🔄 Auto-inject toggle changed to:', elements.autoInjectToggle.checked);
+
+// Beta Lab Functions
+
+function openBetaLabModal() {
+  console.log('🧪 Opening Beta Lab modal');
   
-  // Update settings
-  autoInjectSettings.enabled = elements.autoInjectToggle.checked;
+  // Update auto-injection settings in Beta Lab from current settings
+  elements.betaAutoInjectToggle.checked = autoInjectSettings.enabled;
+  elements.betaAutoInjectDelay.value = autoInjectSettings.delay.toString();
+  elements.betaAutoInjectSettings.style.display = autoInjectSettings.enabled ? 'block' : 'none';
   
-  // Show/hide delay row
-  elements.autoInjectDelayRow.style.display = autoInjectSettings.enabled ? 'flex' : 'none';
+  // Update current profile display
+  const currentProfileText = activeSubprofileId 
+    ? subprofiles.find(s => s.id === activeSubprofileId)?.name || 'Unknown Subprofile'
+    : 'Full Profile';
+  elements.betaCurrentProfile.textContent = currentProfileText;
   
-  // Auto-save
-  await saveAutoInjectSettings();
-  console.log('✅ Auto-inject toggle auto-saved');
+  elements.betaLabModal.style.display = 'flex';
+  console.log('✅ Beta Lab modal opened');
 }
 
-// Auto-save when delay changes
-async function onAutoInjectDelayChange() {
-  console.log('🔄 Auto-inject delay changed to:', elements.autoInjectDelay.value);
+function closeBetaLabModal() {
+  elements.betaLabModal.style.display = 'none';
+  console.log('Beta Lab modal closed');
+}
+
+async function onBetaAutoInjectToggleChange() {
+  console.log('🔄 Beta auto-inject toggle changed to:', elements.betaAutoInjectToggle.checked);
   
   // Update settings
-  autoInjectSettings.delay = parseInt(elements.autoInjectDelay.value, 10);
+  autoInjectSettings.enabled = elements.betaAutoInjectToggle.checked;
+  
+  // Show/hide delay settings
+  elements.betaAutoInjectSettings.style.display = autoInjectSettings.enabled ? 'block' : 'none';
   
   // Auto-save
   await saveAutoInjectSettings();
-  console.log('✅ Auto-inject delay auto-saved');
+  console.log('✅ Beta auto-inject toggle auto-saved');
+}
+
+async function onBetaAutoInjectDelayChange() {
+  console.log('🔄 Beta auto-inject delay changed to:', elements.betaAutoInjectDelay.value);
+  
+  // Update settings
+  autoInjectSettings.delay = parseInt(elements.betaAutoInjectDelay.value, 10);
+  
+  // Auto-save
+  await saveAutoInjectSettings();
+  console.log('✅ Beta auto-inject delay auto-saved');
+}
+
+// Prompt Library Functions
+
+let promptLibrary = [];
+let editingPromptId = null;
+
+async function loadPromptLibrary() {
+  try {
+    const result = await chrome.storage.local.get(['promptLibrary']);
+    promptLibrary = result.promptLibrary || [];
+    updatePromptsList();
+  } catch (error) {
+    console.error('Error loading prompt library:', error);
+  }
+}
+
+async function savePromptLibrary() {
+  try {
+    await chrome.storage.local.set({ promptLibrary });
+    console.log('Prompt library saved:', promptLibrary);
+  } catch (error) {
+    console.error('Error saving prompt library:', error);
+  }
+}
+
+function openPromptLibraryModal() {
+  console.log('📝 Opening Prompt Library modal');
+  loadPromptLibrary();
+  elements.promptLibraryModal.style.display = 'flex';
+  console.log('✅ Prompt Library modal opened');
+}
+
+function showPromptForm(isEditing = false) {
+  if (elements.promptForm) {
+    elements.promptForm.style.display = 'block';
+    
+    // Update form title and button text based on mode
+    if (elements.promptFormTitle) {
+      const titleText = isEditing ? 'Edit Prompt' : 'Add New Prompt';
+      elements.promptFormTitle.textContent = titleText;
+    }
+    
+    // Focus on name input
+    if (elements.promptName) {
+      elements.promptName.focus();
+    }
+  }
+}
+
+function hidePromptForm() {
+  if (elements.promptForm) {
+    elements.promptForm.style.display = 'none';
+    // Reset form and editing state
+    if (elements.promptLibraryForm) {
+      elements.promptLibraryForm.reset();
+    }
+    editingPromptId = null;
+    
+    // Reset form title
+    if (elements.promptFormTitle) {
+      elements.promptFormTitle.textContent = 'Add New Prompt';
+    }
+  }
+}
+
+function closePromptLibraryModal() {
+  elements.promptLibraryModal.style.display = 'none';
+  // Hide and reset form
+  hidePromptForm();
+  console.log('Prompt Library modal closed');
+}
+
+async function handleSavePrompt(e) {
+  e.preventDefault();
+  
+  const name = elements.promptName.value.trim();
+  const tag = elements.promptTag.value.trim();
+  const text = elements.promptText.value.trim();
+  
+  if (!name || !text) {
+    showNotification('Please fill in both name and prompt text', 'error');
+    return;
+  }
+  
+  if (editingPromptId) {
+    // Update existing prompt
+    const promptIndex = promptLibrary.findIndex(p => p.id === editingPromptId);
+    if (promptIndex !== -1) {
+      promptLibrary[promptIndex] = {
+        ...promptLibrary[promptIndex],
+        name,
+        tag,
+        text,
+        updatedAt: new Date().toISOString()
+      };
+      showNotification(`Prompt "${name}" updated successfully!`);
+    } else {
+      showNotification('Prompt not found', 'error');
+      return;
+    }
+  } else {
+    // Create new prompt
+    const newPrompt = {
+      id: generateId(),
+      name,
+      tag,
+      text,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Add to library
+    promptLibrary.push(newPrompt);
+    showNotification(`Prompt "${name}" saved successfully!`);
+  }
+  
+  // Save to storage
+  await savePromptLibrary();
+  
+  // Update UI
+  updatePromptsList();
+  
+  // Hide and reset form
+  hidePromptForm();
+}
+
+function updatePromptsList() {
+  if (!elements.promptsList) return;
+  
+  if (promptLibrary.length === 0) {
+    elements.promptsList.innerHTML = '<div class="empty-message">No prompts saved yet</div>';
+    return;
+  }
+  
+  const html = promptLibrary.map(prompt => `
+    <div class="prompt-item" data-id="${prompt.id}">
+      <div class="prompt-item-content">
+        <div class="prompt-item-title">${escapeHtml(prompt.name)}</div>
+        ${prompt.tag ? `<div class="prompt-item-tag">/prompt:${escapeHtml(prompt.tag)}</div>` : ''}
+        <div class="prompt-item-preview">${escapeHtml(prompt.text.substring(0, 100))}${prompt.text.length > 100 ? '...' : ''}</div>
+      </div>
+      <div class="prompt-item-actions">
+        <button class="button secondary prompt-edit-btn" data-prompt-id="${prompt.id}" title="Edit prompt">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+        </button>
+        <button class="button secondary prompt-copy-btn" data-prompt-id="${prompt.id}" title="Copy prompt">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+        <button class="button secondary prompt-delete-btn" data-prompt-id="${prompt.id}" title="Delete prompt">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3,6 5,6 21,6"></polyline>
+            <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  `).join('');
+  
+  elements.promptsList.innerHTML = html;
+  
+  // Add event listeners using event delegation
+  setupPromptListEventListeners();
+}
+
+function setupPromptListEventListeners() {
+  if (!elements.promptsList) return;
+  
+  // Remove any existing listeners to avoid duplicates
+  const clonedPromptsList = elements.promptsList.cloneNode(true);
+  elements.promptsList.parentNode.replaceChild(clonedPromptsList, elements.promptsList);
+  elements.promptsList = clonedPromptsList;
+  
+  // Add event delegation for all button clicks
+  elements.promptsList.addEventListener('click', (e) => {
+    const button = e.target.closest('button');
+    if (!button) return;
+    
+    const promptId = button.getAttribute('data-prompt-id');
+    if (!promptId) return;
+    
+    if (button.classList.contains('prompt-edit-btn')) {
+      editPrompt(promptId);
+    } else if (button.classList.contains('prompt-copy-btn')) {
+      copyPrompt(promptId);
+    } else if (button.classList.contains('prompt-delete-btn')) {
+      deletePrompt(promptId);
+    }
+  });
+}
+
+// Prompt actions functions
+function editPrompt(promptId) {
+  const prompt = promptLibrary.find(p => p.id === promptId);
+  
+  if (!prompt) {
+    showNotification('Prompt not found', 'error');
+    return;
+  }
+  
+  // Set editing state
+  editingPromptId = promptId;
+  
+  // Populate form with prompt data
+  if (elements.promptName) {
+    elements.promptName.value = prompt.name;
+  }
+  
+  if (elements.promptTag) {
+    elements.promptTag.value = prompt.tag || '';
+  }
+  
+  if (elements.promptText) {
+    elements.promptText.value = prompt.text;
+  }
+  
+  // Show form in edit mode
+  showPromptForm(true);
+}
+
+async function copyPrompt(promptId) {
+  const prompt = promptLibrary.find(p => p.id === promptId);
+  if (!prompt) return;
+  
+  try {
+    await navigator.clipboard.writeText(prompt.text);
+    showNotification(`Copied "${prompt.name}" to clipboard`);
+  } catch (error) {
+    console.error('Failed to copy prompt:', error);
+    showNotification('Failed to copy prompt', 'error');
+  }
+}
+
+async function deletePrompt(promptId) {
+  const prompt = promptLibrary.find(p => p.id === promptId);
+  if (!prompt) return;
+  
+  if (confirm(`Are you sure you want to delete "${prompt.name}"?`)) {
+    promptLibrary = promptLibrary.filter(p => p.id !== promptId);
+    await savePromptLibrary();
+    updatePromptsList();
+    showNotification(`Deleted "${prompt.name}"`);
+  }
 }
 
 // Fix: Add subprofile selector to the existing setupEventListeners function
