@@ -700,9 +700,28 @@ async function injectProfile(button, subprofileId = null) {
       });
     });
     
-    // Create a blob and file
+    // Create a blob and file with dynamic filename
+    let filename = 'my-personal-profile.json';
+    if (subprofileId) {
+      // Get subprofile name for filename
+      try {
+        const subprofileResponse = await chrome.runtime.sendMessage({ 
+          type: 'LOAD_SUBPROFILES'
+        });
+        if (subprofileResponse?.ok && subprofileResponse.subprofiles) {
+          const subprofile = subprofileResponse.subprofiles.find(s => s.id === subprofileId);
+          if (subprofile && subprofile.name) {
+            // Sanitize filename (remove invalid characters)
+            const sanitizedName = subprofile.name.replace(/[^a-zA-Z0-9-_\s]/g, '').replace(/\s+/g, '-').toLowerCase();
+            filename = `my-${sanitizedName}-profile.json`;
+          }
+        }
+      } catch (error) {
+        console.warn('Could not get subprofile name for filename:', error);
+      }
+    }
     const jsonBlob = new Blob([JSON.stringify(profileData, null, 2)], { type: 'application/json' });
-    const file = new File([jsonBlob], 'my-profile.json', { type: 'application/json' });
+    const file = new File([jsonBlob], filename, { type: 'application/json' });
     
     // Find file input based on platform
     const hostname = window.location.hostname;
@@ -1196,9 +1215,28 @@ async function performDirectInjection(inputElement, subprofileId = null) {
       });
     });
     
-    // Create a blob and file
+    // Create a blob and file with dynamic filename
+    let filename = 'my-personal-profile.json';
+    if (subprofileId) {
+      // Get subprofile name for filename
+      try {
+        const subprofileResponse = await chrome.runtime.sendMessage({ 
+          type: 'LOAD_SUBPROFILES'
+        });
+        if (subprofileResponse?.ok && subprofileResponse.subprofiles) {
+          const subprofile = subprofileResponse.subprofiles.find(s => s.id === subprofileId);
+          if (subprofile && subprofile.name) {
+            // Sanitize filename (remove invalid characters)
+            const sanitizedName = subprofile.name.replace(/[^a-zA-Z0-9-_\s]/g, '').replace(/\s+/g, '-').toLowerCase();
+            filename = `my-${sanitizedName}-profile.json`;
+          }
+        }
+      } catch (error) {
+        console.warn('Could not get subprofile name for filename:', error);
+      }
+    }
     const jsonBlob = new Blob([JSON.stringify(profileData, null, 2)], { type: 'application/json' });
-    const file = new File([jsonBlob], 'my-profile.json', { type: 'application/json' });
+    const file = new File([jsonBlob], filename, { type: 'application/json' });
     
     console.log('📄 Created profile JSON file:', file.name, 'Size:', file.size, 'bytes');
     

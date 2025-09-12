@@ -94,6 +94,9 @@ const elements = {
   // Settings Modal
   settingsModal: document.getElementById('settingsModal'),
   closeSettingsModal: document.getElementById('closeSettingsModal'),
+  settingsMainView: document.getElementById('settingsMainView'),
+  settingsBetaLabView: document.getElementById('settingsBetaLabView'),
+  betaLabBackBtn: document.getElementById('betaLabBackBtn'),
   
   // Beta Lab Elements
   betaLabTeaser: document.getElementById('betaLabTeaser'),
@@ -674,6 +677,12 @@ function setupEventListeners() {
   
   // Settings
   elements.settingsBtn.addEventListener('click', openSettingsModal);
+  elements.closeSettingsModal.addEventListener('click', closeSettingsModal);
+  
+  // Settings navigation
+  if (elements.betaLabBackBtn) {
+    elements.betaLabBackBtn.addEventListener('click', showSettingsMainView);
+  }
   
   // Beta Lab Event Listeners
   if (elements.betaLabTeaser) {
@@ -1797,6 +1806,7 @@ async function loadSubprofiles() {
       subprofiles = response.subprofiles || [];
       await loadActiveSubprofile();
       updateSubprofileSelector();
+      updateBetaLabCurrentProfile();
     }
   } catch (error) {
     console.error('Failed to load subprofiles:', error);
@@ -1826,18 +1836,26 @@ function updateSubprofileSelector() {
     selector.removeChild(selector.lastChild);
   }
   
-  // Add subprofile options
-  subprofiles.forEach(subprofile => {
-    const option = document.createElement('option');
-    option.value = subprofile.id;
-    option.textContent = `${subprofile.icon} ${subprofile.name}`;
+  // Add subprofile options with category divider
+  if (subprofiles.length > 0) {
+    // Create optgroup for subprofiles
+    const subprofileGroup = document.createElement('optgroup');
+    subprofileGroup.label = 'Subprofiles';
     
-    if (subprofile.id === activeSubprofileId) {
-      option.selected = true;
-    }
+    subprofiles.forEach(subprofile => {
+      const option = document.createElement('option');
+      option.value = subprofile.id;
+      option.textContent = subprofile.name;
+      
+      if (subprofile.id === activeSubprofileId) {
+        option.selected = true;
+      }
+      
+      subprofileGroup.appendChild(option);
+    });
     
-    selector.appendChild(option);
-  });
+    selector.appendChild(subprofileGroup);
+  }
   
   // Set the current value
   if (activeSubprofileId) {
@@ -1955,6 +1973,9 @@ async function switchSubprofile(subprofileId) {
       
       // Update the dropdown to reflect the change
       updateSubprofileSelector();
+      
+      // Update Beta Lab current profile display
+      updateBetaLabCurrentProfile();
     } else {
       console.error('❌ Failed to switch subprofile:', response?.error);
     }
@@ -2046,34 +2067,62 @@ async function saveAutoInjectSettings() {
 function openSettingsModal() {
   console.log('⚙️ Opening settings modal');
   
+  // Always show main view when opening settings
+  showSettingsMainView();
   elements.settingsModal.style.display = 'flex';
   console.log('✅ Settings modal opened');
 }
 
 function closeSettingsModal() {
+  console.log('⚙️ Closing settings modal');
   elements.settingsModal.style.display = 'none';
-  console.log('Settings modal closed');
+  console.log('✅ Settings modal closed');
 }
 
 
 // Beta Lab Functions
 
+function updateBetaLabCurrentProfile() {
+  // Update current profile display in Beta Lab
+  if (elements.betaCurrentProfile) {
+    const currentProfileText = activeSubprofileId 
+      ? subprofiles.find(s => s.id === activeSubprofileId)?.name || 'Unknown Subprofile'
+      : 'Full Profile';
+    elements.betaCurrentProfile.textContent = currentProfileText;
+  }
+}
+
 function openBetaLabModal() {
-  console.log('🧪 Opening Beta Lab modal');
+  console.log('🧪 Opening Beta Lab view');
   
   // Update auto-injection settings in Beta Lab from current settings
   elements.betaAutoInjectToggle.checked = autoInjectSettings.enabled;
   elements.betaAutoInjectDelay.value = autoInjectSettings.delay.toString();
-  elements.betaAutoInjectSettings.style.display = autoInjectSettings.enabled ? 'block' : 'none';
+  
+  // Set initial visibility state with CSS class
+  if (autoInjectSettings.enabled) {
+    elements.betaAutoInjectSettings.classList.add('show');
+  } else {
+    elements.betaAutoInjectSettings.classList.remove('show');
+  }
   
   // Update current profile display
-  const currentProfileText = activeSubprofileId 
-    ? subprofiles.find(s => s.id === activeSubprofileId)?.name || 'Unknown Subprofile'
-    : 'Full Profile';
-  elements.betaCurrentProfile.textContent = currentProfileText;
+  updateBetaLabCurrentProfile();
   
-  elements.betaLabModal.style.display = 'flex';
-  console.log('✅ Beta Lab modal opened');
+  // Show Beta Lab view and hide main settings view
+  showSettingsBetaLabView();
+}
+
+function showSettingsMainView() {
+  console.log('📱 Showing settings main view');
+  elements.settingsMainView.style.display = 'block';
+  elements.settingsBetaLabView.style.display = 'none';
+}
+
+function showSettingsBetaLabView() {
+  console.log('🧪 Showing Beta Lab view');
+  elements.settingsMainView.style.display = 'none';
+  elements.settingsBetaLabView.style.display = 'block';
 }
 
 function closeBetaLabModal() {
@@ -2087,8 +2136,12 @@ async function onBetaAutoInjectToggleChange() {
   // Update settings
   autoInjectSettings.enabled = elements.betaAutoInjectToggle.checked;
   
-  // Show/hide delay settings
-  elements.betaAutoInjectSettings.style.display = autoInjectSettings.enabled ? 'block' : 'none';
+  // Show/hide delay settings with smooth transition
+  if (autoInjectSettings.enabled) {
+    elements.betaAutoInjectSettings.classList.add('show');
+  } else {
+    elements.betaAutoInjectSettings.classList.remove('show');
+  }
   
   // Auto-save
   await saveAutoInjectSettings();

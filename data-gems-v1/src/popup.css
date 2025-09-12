@@ -672,11 +672,51 @@ body {
 }
 
 .form-input:focus,
-.form-select:focus,
 .form-textarea:focus {
   outline: none;
   border: 2px solid var(--foreground);
   padding: 11px;
+}
+
+.form-select:focus {
+  outline: none;
+  border: 2px solid var(--foreground);
+  padding: 7px 49px 7px 11px; /* Maintain right padding for chevron */
+}
+
+/* Beta Lab injection delay dropdown - specific styling */
+#betaAutoInjectDelay {
+  padding: 8px 40px 8px 12px !important;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6,9 12,15 18,9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+#betaAutoInjectDelay:focus {
+  padding: 7px 39px 7px 11px !important;
+}
+
+/* Ensure add prompt button is perfectly square */
+#addPromptBtn {
+  width: 40px !important;
+  height: 40px !important;
+  flex-shrink: 0;
+}
+
+/* Fix add prompt button tooltip positioning */
+#addPromptBtn::before {
+  top: calc(100% + 8px) !important;
+  bottom: auto !important;
+}
+
+#addPromptBtn::after {
+  top: calc(100% + 2px) !important;
+  bottom: auto !important;
+  border-color: transparent transparent var(--tooltip-background) transparent !important;
 }
 
 .form-textarea {
@@ -1041,13 +1081,14 @@ button:focus-visible {
   }
 }
 
-/* Beta Lab Styles */
+/* Beta Lab Styles - Updated for new design */
 .beta-lab-section {
   border-top: 1px solid var(--border);
   margin-top: 24px;
   padding-top: 20px;
 }
 
+/* Legacy Beta Lab Teaser - kept for backward compatibility */
 .beta-lab-teaser {
   display: flex;
   align-items: center;
@@ -1095,6 +1136,13 @@ button:focus-visible {
 
 .beta-lab-teaser:hover .beta-lab-arrow {
   transform: translateX(2px);
+}
+
+/* Enhanced hover effect for the new card-based Beta Lab */
+.beta-lab-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+  transform: translateY(-1px);
 }
 
 /* Beta Lab Modal Styles */
@@ -1398,22 +1446,48 @@ button:focus-visible {
 [data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
-  top: calc(100% + 4px);
+  bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%) scale(0.9);
   color: var(--muted-foreground);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 8px;
   font-size: 11px;
   font-weight: var(--font-weight-book);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
   transition: all 0.2s ease;
-  z-index: 100;
+  z-index: 9999;
 }
 
 [data-tooltip]:hover::after {
   transform: translateX(-50%) scale(1);
   opacity: 1;
+}
+
+/* Special positioning for header buttons - tooltips appear below */
+.header-actions [data-tooltip]::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+}
+
+.header-actions [data-tooltip]:hover::after {
+  transform: translateX(-50%) scale(1);
+  opacity: 1;
+}
+
+/* Special positioning for delete button tooltip to prevent cutoff */
+.subprofile-delete-btn[data-tooltip]::after {
+  left: auto;
+  right: 0;
+  transform: translateX(0) scale(0.9);
+}
+
+.subprofile-delete-btn[data-tooltip]:hover::after {
+  transform: translateX(0) scale(1);
 }
 
 /* Remove previous dark theme animations */
@@ -1595,7 +1669,326 @@ button:focus-visible {
   display: none;
 }
 
-/* Settings Modal Styles */
+/* Settings Modal Styles - Redesigned */
+.settings-modal {
+  max-width: 480px;
+}
+
+.settings-header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  border-radius: var(--radius-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-foreground);
+}
+
+.settings-title h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+}
+
+.settings-subtitle {
+  margin: 2px 0 0 0;
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+
+.settings-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium);
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.settings-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 166, 153, 0.1);
+}
+
+.settings-card:last-child {
+  margin-bottom: 0;
+}
+
+.settings-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.settings-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-small);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.beta-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.privacy-icon {
+  background: linear-gradient(135deg, var(--accent) 0%, #00b3a6 100%);
+}
+
+.about-icon {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.settings-card-title {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-card-title h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+}
+
+.beta-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.settings-card-action {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--muted);
+  border-radius: var(--radius-small);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--muted-foreground);
+}
+
+.settings-card-action:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  transform: translateX(2px);
+}
+
+.settings-card-description {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+
+.settings-card-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.settings-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  transition: all 0.2s ease;
+}
+
+.settings-link:hover {
+  color: var(--accent);
+  transform: translateX(2px);
+}
+
+.settings-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Settings Page Navigation */
+.settings-page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-back-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--muted);
+  border-radius: var(--radius-small);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--muted-foreground);
+  margin-right: 20px;
+}
+
+.settings-back-btn:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  transform: translateX(-2px);
+}
+
+.settings-page-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-page-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: var(--radius-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.settings-page-title h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+}
+
+.settings-page-subtitle {
+  margin: 2px 0 0 0;
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+
+/* Toggle Switch Styles */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--muted);
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #667eea;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+}
+
+/* Beta Lab Settings Panel */
+.beta-settings-panel {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--muted);
+  border-radius: var(--radius-small);
+  border: 1px solid var(--border);
+  transition: opacity 0.3s ease, max-height 0.3s ease;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+}
+
+.beta-settings-panel.show {
+  max-height: 200px;
+  opacity: 1;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.setting-row:last-child {
+  margin-bottom: 0;
+}
+
+.setting-label {
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+  margin: 0;
+}
+
+.form-select {
+  padding: 8px 50px 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 14px;
+}
+
+.setting-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+/* Legacy settings styles - kept for compatibility */
 .settings-section {
   margin-bottom: 24px;
 }

@@ -200,6 +200,52 @@
         color: #666;
         margin: 0;
       }
+      
+      /* Toggle Switch Styles */
+      .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+      }
+      
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      
+      .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 24px;
+      }
+      
+      .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+      }
+      
+      .toggle-switch input:checked + .toggle-slider {
+        background-color: #667eea;
+      }
+      
+      .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(26px);
+      }
     </style>
   </head>
   <body>
@@ -319,6 +365,60 @@
               <h4 class="template-name">Learning</h4>
             </div>
             <p class="template-description">Educational preferences and learning style</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Beta Lab Section -->
+    <div class="subprofiles-section" style="margin-top: 30px;">
+      <div style="padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 6px 6px 0 0;">
+        <h2 style="margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;">
+          <span>🧪</span> Beta Lab
+        </h2>
+        <p style="margin: 0; opacity: 0.9; font-size: 14px;">Experimental features and upcoming capabilities</p>
+      </div>
+      
+      <div style="padding: 20px;">
+        <!-- Auto-Injection Feature -->
+        <div class="form-section" style="margin: 0 0 20px 0;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <div>
+              <h3 style="margin: 0 0 4px 0;">Auto-Injection</h3>
+              <p style="margin: 0; color: #666; font-size: 14px;">Automatically inject your profile when opening new chats</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="betaAutoInjectToggle">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          
+          <div id="betaAutoInjectSettings" style="display: none; margin-top: 16px; padding: 16px; background: #f8f9fa; border-radius: 6px;">
+            <label style="display: block; margin-bottom: 12px;">
+              Injection Delay:
+              <select id="betaAutoInjectDelay" style="margin-left: 8px; width: auto; display: inline-block;">
+                <option value="1">1 second</option>
+                <option value="2" selected>2 seconds</option>
+                <option value="3">3 seconds</option>
+                <option value="5">5 seconds</option>
+              </select>
+            </label>
+            <p style="margin: 0; font-size: 12px; color: #666;">
+              Currently using: <span id="betaCurrentProfile" style="font-weight: 500;">Full Profile</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Prompt Library Feature -->
+        <div class="form-section" style="margin: 0;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <div>
+              <h3 style="margin: 0 0 4px 0;">Prompt Library</h3>
+              <p style="margin: 0; color: #666; font-size: 14px;">Save and organize reusable prompts for quick access</p>
+            </div>
+            <button id="openPromptLibraryBtn" class="btn btn-primary" style="white-space: nowrap;">
+              Manage Library
+            </button>
           </div>
         </div>
       </div>
