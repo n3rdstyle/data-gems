@@ -525,20 +525,23 @@ function handleSubmit(e) {
 
 // Handle export
 async function handleExport() {
-  // Load personal description from storage
-  const personalDescriptionData = await chrome.storage.local.get(['personalDescription']);
-  
+  // Load personal description and prompt library from storage
+  const storageData = await chrome.storage.local.get(['personalDescription', 'promptLibrary']);
+
   // Create comprehensive export data
   const exportData = {
-    version: '2.1',
+    version: '2.2',
     exportedAt: new Date().toISOString(),
-    personalDescription: personalDescriptionData.personalDescription || null,
+    personalDescription: storageData.personalDescription || null,
     contextItems: contextItems,
+    promptLibrary: storageData.promptLibrary || [],
     // Include metadata
     metadata: {
       totalItems: contextItems.length,
+      totalPrompts: (storageData.promptLibrary || []).length,
       categories: [...new Set(contextItems.map(item => item.category))],
-      hasPersonalDescription: !!personalDescriptionData.personalDescription
+      hasPersonalDescription: !!storageData.personalDescription,
+      hasPromptLibrary: (storageData.promptLibrary || []).length > 0
     }
   };
   
@@ -554,7 +557,12 @@ async function handleExport() {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
   
-  showNotification('Context exported successfully!');
+  const promptCount = (storageData.promptLibrary || []).length;
+  let message = 'Data exported successfully!';
+  if (promptCount > 0) {
+    message = `Context and ${promptCount} prompts exported successfully!`;
+  }
+  showNotification(message);
 }
 
 // Handle import
@@ -571,9 +579,10 @@ function handleImport() {
         try {
           const imported = JSON.parse(e.target.result);
           let itemsToImport = [];
-          
-          // Handle new format (v2.1 with personal description)
-          if (imported.version === '2.1' && imported.contextItems) {
+          let importedPromptCount = 0;
+
+          // Handle new format (v2.2 with prompt library or v2.1 with personal description)
+          if (imported.version === '2.2' || imported.version === '2.1') {
             // Import personal description if present
             if (imported.personalDescription) {
               chrome.storage.local.set({ personalDescription: imported.personalDescription });
@@ -582,13 +591,26 @@ function handleImport() {
                 elements.personalDescription.value = imported.personalDescription;
               }
             }
-            // Import context items
-            itemsToImport = imported.contextItems.map(item => ({
-              ...item,
-              id: item.id || generateId(),
-              createdAt: new Date(item.createdAt || Date.now()),
-              updatedAt: new Date(item.updatedAt || Date.now())
-            }));
+
+            // Import prompt library if present (v2.2 feature)
+            if (imported.promptLibrary && Array.isArray(imported.promptLibrary)) {
+              chrome.storage.local.set({ promptLibrary: imported.promptLibrary });
+              // Update the global promptLibrary variable if it exists
+              if (typeof promptLibrary !== 'undefined') {
+                promptLibrary = imported.promptLibrary;
+              }
+              importedPromptCount = imported.promptLibrary.length;
+            }
+
+            // Import context items if they exist
+            if (imported.contextItems && Array.isArray(imported.contextItems)) {
+              itemsToImport = imported.contextItems.map(item => ({
+                ...item,
+                id: item.id || generateId(),
+                createdAt: new Date(item.createdAt || Date.now()),
+                updatedAt: new Date(item.updatedAt || Date.now())
+              }));
+            }
           }
           // Handle array format (original format)
           else if (Array.isArray(imported)) {
@@ -639,18 +661,31 @@ function handleImport() {
               saveItems();
               filterItems();
               updateUI();
-              
+
               const skippedCount = itemsToImport.length - newItems.length;
-              if (skippedCount > 0) {
-                showNotification(`Imported ${newItems.length} new items (${skippedCount} duplicates skipped)`);
-              } else {
-                showNotification(`Imported ${newItems.length} context items!`);
+              let message = `Imported ${newItems.length} context items`;
+              if (importedPromptCount > 0) {
+                message += ` and ${importedPromptCount} prompts`;
               }
+              if (skippedCount > 0) {
+                message += ` (${skippedCount} duplicates skipped)`;
+              }
+              showNotification(message + '!');
             } else {
-              showNotification('All items already exist. No new items imported.', 'info');
+              // Handle case where no context items but prompts were imported
+              if (importedPromptCount > 0) {
+                showNotification(`Imported ${importedPromptCount} prompts! All context items already exist.`, 'info');
+              } else {
+                showNotification('All items already exist. No new items imported.', 'info');
+              }
             }
           } else {
-            showNotification('No valid items found in the imported file.', 'error');
+            // Handle case where no context items but prompts were imported
+            if (importedPromptCount > 0) {
+              showNotification(`Imported ${importedPromptCount} prompts successfully!`);
+            } else {
+              showNotification('No valid items found in the imported file.', 'error');
+            }
           }
         } catch (error) {
           showNotification('Failed to import file. Please check the format.', 'error');
