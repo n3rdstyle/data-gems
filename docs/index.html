@@ -33,15 +33,6 @@
             color: #04214E;
             margin-bottom: 10px;
             font-size: 2.5em;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .diamond-icon {
-            width: 40px;
-            height: 40px;
-            fill: #04214E;
         }
         
         .subtitle {
@@ -106,18 +97,32 @@
             text-align: center;
             color: #666;
         }
+        .nav-links {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .nav-links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #04214E;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>
-            <svg class="diamond-icon" viewBox="0 0 24 24">
-                <path d="M12 2L4 8L12 22L20 8L12 2Z"/>
-            </svg>
-            Privacy Policy
-        </h1>
-        <div class="subtitle">Data Gems - Prompt Profile Injector</div>
-        <div class="last-updated">Last Updated: August 24, 2025</div>
+        <div class="nav-links">
+            <a href="onboarding.html">← Getting Started</a>
+        </div>
+        
+        <h1>Privacy Policy</h1>
+        <div class="subtitle">The Personal Context Provider for your AI conversations</div>
+        <div class="last-updated">Last Updated: September 15, 2025</div>
 
         <h2>Overview</h2>
         <p>Data Gems ("the Extension") is a Chrome browser extension that helps users inject their personal profile information into AI chat interfaces. We are committed to protecting your privacy and ensuring your personal data remains secure.</p>
@@ -134,8 +139,8 @@
         <h3>Where Data is Stored</h3>
         <ul>
             <li><strong>Locally only</strong>: All your personal data is stored exclusively in your browser's local storage</li>
-            <li><strong>Encrypted</strong>: Profile data is encrypted using AES-GCM encryption before storage</li>
             <li><strong>Never transmitted</strong>: Your data never leaves your device</li>
+            <li><strong>No external servers</strong>: Data is not sent to any remote servers or cloud services</li>
         </ul>
 
         <h2>Data Usage</h2>
@@ -158,9 +163,10 @@
 
         <h2>Data Security</h2>
         <ul>
-            <li>All profile data is encrypted using industry-standard AES-GCM encryption</li>
-            <li>Encryption keys are generated locally and stored only in your browser</li>
-            <li>No one, including the extension developers, can access your encrypted data</li>
+            <li>All profile data is stored locally in your browser using Chrome's secure storage APIs</li>
+            <li>Data never leaves your device - no network requests or external communications</li>
+            <li>No one, including the extension developers, can access your local data</li>
+            <li>You have complete control over your data storage and deletion</li>
         </ul>
 
         <h2>User Rights</h2>
@@ -177,7 +183,7 @@
         <ul>
             <li><strong>Storage</strong>: To save your encrypted profile data locally</li>
             <li><strong>Active Tab</strong>: To inject profile text into AI chat interfaces</li>
-            <li><strong>Host permissions</strong>: To interact with supported AI platforms (ChatGPT, Claude, Gemini, Perplexity, Poe)</li>
+            <li><strong>Host permissions</strong>: To interact with supported AI platforms (ChatGPT, Claude, Gemini, Perplexity)</li>
         </ul>
 
         <h2>Third-Party Services</h2>
@@ -189,22 +195,16 @@
         <h2>Changes to This Policy</h2>
         <p>We may update this privacy policy from time to time. Any changes will be reflected in the "Last Updated" date above. Continued use of the extension after changes constitutes acceptance of the updated policy.</p>
 
-        <h2>Open Source</h2>
-        <p>This extension is open source. You can review our code at: <a href="https://github.com/n3rdstyle/data-gems" target="_blank">https://github.com/n3rdstyle/data-gems</a></p>
 
         <h2>Contact</h2>
-        <p>If you have questions or concerns about this privacy policy or the extension, please:</p>
-        <ul>
-            <li>Open an issue on GitHub: <a href="https://github.com/n3rdstyle/data-gems/issues" target="_blank">https://github.com/n3rdstyle/data-gems/issues</a></li>
-            <li>Review the source code: <a href="https://github.com/n3rdstyle/data-gems" target="_blank">https://github.com/n3rdstyle/data-gems</a></li>
-        </ul>
+        <p>If you have questions or concerns about this privacy policy or the extension, please contact us through the Chrome Web Store support channels or leave a review with your feedback.</p>
 
-        <h2>Compliance</h2>
-        <p>This extension complies with:</p>
+        <h2>Privacy Standards</h2>
+        <p>This extension is designed with privacy principles in mind:</p>
         <ul>
-            <li>Chrome Web Store Developer Program Policies</li>
-            <li>General Data Protection Regulation (GDPR) principles</li>
-            <li>California Consumer Privacy Act (CCPA) requirements</li>
+            <li>Built to align with Chrome Web Store Developer Program Policies</li>
+            <li>Designed following GDPR privacy-by-design principles</li>
+            <li>Implements CCPA-compliant data practices (local storage, user control)</li>
         </ul>
 
         <p>By using Data Gems, you acknowledge that you have read and understood this privacy policy.</p>

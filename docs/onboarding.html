@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting Started - Data Gems</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #04214E;
+            background: linear-gradient(135deg, #ffd194 0%, #fdb863 25%, #f9a05c 50%, #f47b6a 75%, #e84c88 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #04214E;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        h2 {
+            color: #04214E;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #f47b6a;
+            padding-bottom: 8px;
+        }
+        
+        h3 {
+            color: #04214E;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        p, li {
+            margin-bottom: 12px;
+            color: #333;
+        }
+        
+        ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        ol {
+            margin-left: 0;
+            margin-bottom: 15px;
+            padding-left: 24px;
+        }
+        
+        strong {
+            color: #04214E;
+        }
+        
+        a {
+            color: #f47b6a;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        .version-badge {
+            background: linear-gradient(135deg, #e84c88 0%, #f47b6a 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .feature-card {
+            background: linear-gradient(135deg, rgba(232,76,136,0.1) 0%, rgba(244,123,106,0.1) 100%);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(244,123,106,0.2);
+        }
+        
+        .feature-card h3 {
+            margin-top: 0;
+        }
+        
+        .shortcut-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        .shortcut-table th,
+        .shortcut-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .shortcut-table th {
+            background: linear-gradient(135deg, rgba(232,76,136,0.1) 0%, rgba(244,123,106,0.1) 100%);
+            font-weight: 600;
+        }
+        
+        .kbd {
+            background-color: #f4f4f4;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+            display: inline-block;
+            font-family: monospace;
+            font-size: 0.9em;
+            padding: 2px 5px;
+            margin: 0 2px;
+        }
+        
+        .tip-box {
+            background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.1) 100%);
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .warning-box {
+            background: linear-gradient(135deg, rgba(251,191,36,0.1) 0%, rgba(245,158,11,0.1) 100%);
+            border-left: 4px solid #fbbf24;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .step-list {
+            counter-reset: step-counter;
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .step-list li {
+            counter-increment: step-counter;
+            position: relative;
+            padding-left: 40px;
+            margin-bottom: 20px;
+        }
+        
+        .step-list li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: linear-gradient(135deg, #e84c88 0%, #f47b6a 100%);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .command-example {
+            background: #f8f8f8;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 0.95em;
+        }
+        
+        .nav-links {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .nav-links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #04214E;
+            font-weight: 500;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav-links">
+            <span></span>
+            <a href="index.html">Privacy Policy →</a>
+        </div>
+        
+        <h1>Getting Started with Data Gems</h1>
+        <div class="subtitle">The Personal Context Provider for your AI conversations</div>
+        <div class="version-badge">Version 1.0.0</div>
+
+        <h2>Welcome to Data Gems!</h2>
+        <p>Build and manage your personal profile, and inject it into your AI conversations with one click. Data Gems helps AI assistants and agents truly understand you by providing personalized context – all while keeping your data 100% private and local.</p>
+
+        <div class="tip-box">
+            <strong>🚀 Quick Start:</strong> Click the Data Gems icon in your browser toolbar to start building your personal profile. Then visit any supported AI platform and look for the "Inject my profile" button!
+        </div>
+
+        <h2>Core Features</h2>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>🔐 100% Private</h3>
+                <p>All your data is stored locally in your browser. Nothing ever leaves your device.</p>
+            </div>
+            <div class="feature-card">
+                <h3>⚡ One-Click Injection</h3>
+                <p>Instantly share your personal context with AI assistants and agents using the injection button.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🌍 Universal Support</h3>
+                <p>Works with ChatGPT, Claude, Gemini, and Perplexity.</p>
+            </div>
+            <div class="feature-card">
+                <h3>📁 Smart Organization</h3>
+                <p>Organize your information with categories and subprofiles.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔍 Quick Search</h3>
+                <p>Find any piece of your personal data instantly with the search function.</p>
+            </div>
+            <div class="feature-card">
+                <h3>💾 Import/Export</h3>
+                <p>Backup your data and transfer between devices with JSON files.</p>
+            </div>
+        </div>
+
+        <h2>How to Use Data Gems</h2>
+        
+        <h3>Step 1: Build Your Profile</h3>
+        <ol>
+            <li>Click the Data Gems icon in your browser toolbar</li>
+            <li>Add information about yourself using the "Add New Information" button</li>
+            <li>Organize your information into categories like Work, Preferences, Hobbies, etc.</li>
+            <li>OPTIONAL: Create individual subprofiles for different contexts (e.g., travel, food or favorite brands)</li>
+        </ol>
+
+        <h3>Step 2: Inject Your Profile</h3>
+        <ol>
+            <li>Visit any supported AI platform (ChatGPT, Claude, Gemini, Perplexity)</li>
+            <li>Look for the colorful "Inject my profile" button near the chat input</li>
+            <li>Click it and select what to inject (full profile or a specific subprofile)</li>
+        </ol>
+        <p><em>Plus: There is an auto-injection option. See the Advanced Features section below.</em></p>
+
+        <h3>Step 3: Personal Description (Optional)</h3>
+        <p>Add a custom description that appears with your profile:</p>
+        <ol>
+            <li>Set your name in the profile popup</li>
+            <li>Write a brief personal description</li>
+            <li>This helps AI getting a brief intro about you, before even analyzing all your personal information</li>
+        </ol>
+
+        <h3>Step 4: Upload Profile Image (Optional)</h3>
+        <ol>
+            <li>Click the avatar area in the profile popup</li>
+            <li>Upload a profile image</li>
+        </ol>
+        <p><em>Note: The image is only for visual display in the extension - it is not sent to AI platforms</em></p>
+
+        <h2>Advanced Features</h2>
+
+        <h3>Subprofiles</h3>
+        <p>Create focused context sets for different situations, for example:</p>
+        <ul>
+            <li><strong>Travel Planning:</strong> Preferred destinations, travel style, budget preferences</li>
+            <li><strong>Food & Dining:</strong> Dietary restrictions, favorite cuisines, cooking preferences</li>
+            <li><strong>Shopping:</strong> Favorite brands, style preferences, budget ranges</li>
+            <li><strong>Entertainment:</strong> Movie genres, music tastes, hobbies and interests</li>
+        </ul>
+        
+        <h4>How to Create and Use Subprofiles</h4>
+        <ol>
+            <li><strong>Create:</strong> Click the "+" button next to "Active Profile" in the extension popup</li>
+            <li><strong>Name:</strong> Give your subprofile a descriptive name (e.g., "Travel Planning")</li>
+            <li><strong>Add Information:</strong> Add relevant context items to this subprofile</li>
+            <li><strong>Select:</strong> Use the dropdown menu to switch between subprofiles</li>
+            <li><strong>Inject:</strong> When you click "Inject my profile", you can choose to inject the active subprofile or your full profile</li>
+        </ol>
+
+        <h3>Prompt Library</h3>
+        <p>Create and manage a library of reusable prompts that can be quickly injected into AI conversations.</p>
+        
+        <h4>Using the /prompt Command</h4>
+        <p>Type the command directly in the AI chat input to inject a specific prompt by its tag:</p>
+        <div class="command-example">
+            /prompt:work      # Injects the prompt tagged with "work"<br>
+            /prompt:coding    # Injects the prompt tagged with "coding"<br>
+            /prompt:travel    # Injects the prompt tagged with "travel"
+        </div>
+        
+        <h4>How to Set Up Prompts</h4>
+        <ol>
+            <li>Create prompts in the settings popup (under "Beta Lab")</li>
+            <li>Assign a unique tag to each prompt (e.g., work, coding, travel)</li>
+            <li>Use the /prompt:tag command to quickly inject any saved prompt</li>
+        </ol>
+
+        <h3>Auto-Injection</h3>
+        <p>Configure Data Gems to automatically inject your profile:</p>
+        <ol>
+            <li>Open settings popup (under "Beta Lab")</li>
+            <li>Enable "Auto-inject on page load"</li>
+            <li>Set delay time (default: 2 seconds)</li>
+            <li>The currently selected profile/subprofile in the extension will be automatically injected</li>
+        </ol>
+
+        <div class="warning-box">
+            <strong>⚠️ Note:</strong> Auto-injection only works once per page load to avoid disrupting your workflow.
+        </div>
+
+        <h3>Custom Categories</h3>
+        <p>Beyond the default categories, create your own:</p>
+        <ol>
+            <li>Select "Other" when adding new information</li>
+            <li>Enter your custom category name</li>
+            <li>Use custom categories for specialized domains or unique organizational needs</li>
+        </ol>
+
+        <h2>Data Management</h2>
+
+        <h3>Import/Export</h3>
+        <p>Backup or transfer your data between devices:</p>
+        <ol class="step-list">
+            <li>Click the Export button to download your data as JSON</li>
+            <li>Save the file in a secure location</li>
+            <li>On another device, click Import and select your backup file</li>
+            <li>Your profile will be restored with all settings intact</li>
+        </ol>
+
+        <h3>Search and Filter</h3>
+        <ul>
+            <li>Use the search bar to find specific information quickly</li>
+            <li>Filter by category using the category buttons</li>
+            <li>Search works across questions, answers, and categories</li>
+        </ul>
+
+        <h2>Supported Platforms</h2>
+        <p>Data Gems currently works with:</p>
+        <ul>
+            <li><strong>ChatGPT:</strong> chat.openai.com</li>
+            <li><strong>Claude:</strong> claude.ai</li>
+            <li><strong>Gemini:</strong> gemini.google.com</li>
+            <li><strong>Perplexity:</strong> perplexity.ai</li>
+        </ul>
+
+        <h2>Privacy & Security</h2>
+        <ul>
+            <li>✅ All data stored locally in your browser</li>
+            <li>✅ Data never leaves your device</li>
+            <li>✅ No external servers or cloud storage</li>
+            <li>✅ No tracking or analytics</li>
+            <li>✅ Strong AES-GCM encryption for sensitive data</li>
+        </ul>
+
+        <h2>Tips for Best Results</h2>
+        <ul>
+            <li><strong>Be specific:</strong> Add detailed information about your preferences and context</li>
+            <li><strong>Stay organized:</strong> Use categories and subprofiles effectively</li>
+            <li><strong>Update regularly:</strong> Keep your profile current as your needs change</li>
+            <li><strong>Use tags:</strong> Make prompts easily discoverable with descriptive tags</li>
+            <li><strong>Backup often:</strong> Export your data regularly to prevent loss</li>
+        </ul>
+
+        <h2>Get Help</h2>
+        <p>Need assistance or have suggestions?</p>
+        <ul>
+            <li>Report issues: <a href="https://github.com/n3rdstyle/data-gems/issues" target="_blank">GitHub Issues</a></li>
+            <li>View source code: <a href="https://github.com/n3rdstyle/data-gems" target="_blank">GitHub Repository</a></li>
+            <li>Read privacy policy: <a href="index.html">Privacy Policy</a></li>
+        </ul>
+
+        <div class="footer">
+            <p>© 2025 Data Gems - Empowering personalized AI conversations</p>
+            <p>Made with privacy and user control in mind</p>
+        </div>
+    </div>
+</body>
+</html>
