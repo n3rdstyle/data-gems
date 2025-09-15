@@ -50,6 +50,7 @@ const elements = {
   removeImageBtn: document.getElementById('removeImageBtn'),
   personalDescription: document.getElementById('personalDescription'),
   privacyLink: document.getElementById('privacyLink'),
+  profileName: document.getElementById('profileName'),
   
   // Edit Modal
   editModal: document.getElementById('editModal'),
@@ -139,6 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // updateUI() is already called in loadItems(), no need to call it again
   loadProfileImage(); // Load profile image after DOM is ready
   loadPersonalDescription(); // Load personal description after DOM is ready
+  loadProfileName(); // Load profile name after DOM is ready
 });
 
 // Load items from chrome.storage
@@ -746,6 +748,8 @@ function setupEventListeners() {
   elements.removeImageBtn.addEventListener('click', removeProfileImage);
   elements.personalDescription.addEventListener('input', handlePersonalDescriptionChange);
   elements.privacyLink.addEventListener('click', openPrivacyStatement);
+  elements.profileName.addEventListener('input', handleProfileNameChange);
+  elements.profileName.addEventListener('blur', handleProfileNameBlur);
   
   // Close modal on outside click
   elements.profileModal.addEventListener('click', (e) => {
@@ -1060,6 +1064,66 @@ function loadPersonalDescription() {
       elements.personalDescription.value = result.personalDescription;
     }
   });
+}
+
+// Profile Name Functions
+function handleProfileNameChange() {
+  const name = elements.profileName.textContent.trim();
+  
+  // Update avatar letter immediately while typing
+  updateAvatarLetter(name);
+  
+  // Save with debouncing
+  clearTimeout(window.nameChangeTimeout);
+  window.nameChangeTimeout = setTimeout(() => {
+    saveProfileName(name);
+  }, 500);
+}
+
+function handleProfileNameBlur() {
+  const name = elements.profileName.textContent.trim();
+  
+  // If name is empty, show placeholder by clearing content
+  if (!name) {
+    elements.profileName.textContent = '';
+  }
+  
+  // Save immediately on blur
+  clearTimeout(window.nameChangeTimeout);
+  saveProfileName(name);
+}
+
+function saveProfileName(name) {
+  chrome.storage.local.set({ profileName: name }, () => {
+    console.log('Profile name saved:', name);
+    updateAvatarLetter(name);
+  });
+}
+
+function loadProfileName() {
+  chrome.storage.local.get(['profileName'], (result) => {
+    if (result.profileName) {
+      elements.profileName.textContent = result.profileName;
+      updateAvatarLetter(result.profileName);
+    } else {
+      // Show placeholder if no name is set
+      elements.profileName.textContent = '';
+      updateAvatarLetter('');
+    }
+  });
+}
+
+function updateAvatarLetter(name) {
+  const avatarLetter = document.querySelector('.avatar-letter');
+  if (avatarLetter) {
+    if (name && name.trim()) {
+      // Use first letter of the name, capitalized
+      avatarLetter.textContent = name.trim().charAt(0).toUpperCase();
+    } else {
+      // Default to '?' when no name is set
+      avatarLetter.textContent = '?';
+    }
+  }
 }
 
 function openPrivacyStatement(e) {

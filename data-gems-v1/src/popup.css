@@ -152,6 +152,32 @@ body {
   margin-bottom: 2px;
 }
 
+.profile-name-editable {
+  border: none;
+  background: transparent;
+  outline: none;
+  cursor: text;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  min-height: 20px;
+}
+
+.profile-name-editable:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.profile-name-editable:focus {
+  background-color: var(--input-background);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.profile-name-editable:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
 .profile-status {
   font-size: 14px;
   color: var(--muted-foreground);
