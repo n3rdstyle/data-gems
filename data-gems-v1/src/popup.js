@@ -2498,7 +2498,7 @@ async function copyPrompt(promptId) {
 async function deletePrompt(promptId) {
   const prompt = promptLibrary.find(p => p.id === promptId);
   if (!prompt) return;
-  
+
   if (confirm(`Are you sure you want to delete "${prompt.name}"?`)) {
     promptLibrary = promptLibrary.filter(p => p.id !== promptId);
     await savePromptLibrary();
@@ -2506,6 +2506,678 @@ async function deletePrompt(promptId) {
     showNotification(`Deleted "${prompt.name}"`);
   }
 }
+
+// ============================================
+// External Data Import Functions
+// ============================================
+
+let extractedInsights = [];
+let selectedInsights = new Set();
+
+// Initialize external data import elements and event listeners
+function initializeDataImport() {
+  // Get elements
+  const openDataImportBtn = document.getElementById('openDataImportBtn');
+  const dataImportModal = document.getElementById('dataImportModal');
+  const closeDataImportModal = document.getElementById('closeDataImportModal');
+  const dataImportFileInput = document.getElementById('dataImportFileInput');
+  const importBackBtn = document.getElementById('importBackBtn');
+  const selectAllImports = document.getElementById('selectAllImports');
+  const importCategoryFilter = document.getElementById('importCategoryFilter');
+  const cancelImportBtn = document.getElementById('cancelImportBtn');
+  const confirmImportBtn = document.getElementById('confirmImportBtn');
+
+  // Event listeners
+  if (openDataImportBtn) {
+    openDataImportBtn.addEventListener('click', openDataImportModal);
+  }
+
+  if (closeDataImportModal) {
+    closeDataImportModal.addEventListener('click', closeDataImportModalFunc);
+  }
+
+  // Source card selection
+  document.querySelectorAll('.source-select-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const source = e.target.dataset.source;
+      if (source === 'chatgpt') {
+        dataImportFileInput.click();
+      }
+    });
+  });
+
+  if (dataImportFileInput) {
+    dataImportFileInput.addEventListener('change', handleFileSelection);
+  }
+
+  if (importBackBtn) {
+    importBackBtn.addEventListener('click', () => {
+      showImportSection('source');
+    });
+  }
+
+  if (selectAllImports) {
+    selectAllImports.addEventListener('change', handleSelectAll);
+  }
+
+  if (importCategoryFilter) {
+    importCategoryFilter.addEventListener('change', filterImportedInsights);
+  }
+
+  if (cancelImportBtn) {
+    cancelImportBtn.addEventListener('click', closeDataImportModalFunc);
+  }
+
+  if (confirmImportBtn) {
+    confirmImportBtn.addEventListener('click', confirmImport);
+  }
+
+  // History section buttons
+  const importNewBtn = document.getElementById('importNewBtn');
+  if (importNewBtn) {
+    importNewBtn.addEventListener('click', () => {
+      showImportSection('source');
+    });
+  }
+
+  const importDetailsBackBtn = document.getElementById('importDetailsBackBtn');
+  if (importDetailsBackBtn) {
+    importDetailsBackBtn.addEventListener('click', () => {
+      showImportHistory();
+    });
+  }
+}
+
+async function openDataImportModal() {
+  console.log('📥 Opening Data Import modal');
+  const modal = document.getElementById('dataImportModal');
+  if (modal) {
+    modal.style.display = 'flex';
+
+    // Check if there are existing imports
+    const result = await chrome.storage.local.get(['importedData']);
+    const importedData = result.importedData || [];
+
+    if (importedData.length > 0) {
+      // Show history if there are existing imports
+      showImportHistory();
+    } else {
+      // Show source selection for first import
+      showImportSection('source');
+    }
+
+    // Reset file input
+    const fileInput = document.getElementById('dataImportFileInput');
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  }
+}
+
+function closeDataImportModalFunc() {
+  const modal = document.getElementById('dataImportModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+  // Reset state
+  extractedInsights = [];
+  selectedInsights.clear();
+  showImportSection('source');
+}
+
+function showImportSection(section) {
+  const sourceSection = document.getElementById('importSourceSection');
+  const progressSection = document.getElementById('importProgressSection');
+  const previewSection = document.getElementById('importPreviewSection');
+  const historySection = document.getElementById('importHistorySection');
+  const detailsSection = document.getElementById('importDetailsSection');
+
+  if (sourceSection) sourceSection.style.display = section === 'source' ? 'block' : 'none';
+  if (progressSection) progressSection.style.display = section === 'progress' ? 'block' : 'none';
+  if (previewSection) previewSection.style.display = section === 'preview' ? 'block' : 'none';
+  if (historySection) historySection.style.display = section === 'history' ? 'block' : 'none';
+  if (detailsSection) detailsSection.style.display = section === 'details' ? 'block' : 'none';
+}
+
+async function handleFileSelection(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  showImportSection('progress');
+  updateProgressText('Reading file...');
+
+  try {
+    let conversations = [];
+
+    if (file.name.endsWith('.zip')) {
+      // Handle ChatGPT export ZIP file
+      conversations = await processChatGPTZip(file);
+    } else if (file.name.endsWith('.json')) {
+      // Handle direct JSON file
+      const text = await file.text();
+      const data = JSON.parse(text);
+      conversations = data.conversations || data;
+    }
+
+    updateProgressText('Analyzing conversations...');
+    extractedInsights = await extractInsightsFromConversations(conversations);
+
+    // Initialize all insights as selected
+    extractedInsights.forEach(insight => {
+      selectedInsights.add(insight.id);
+    });
+
+    // Display preview
+    displayImportPreview();
+    showImportSection('preview');
+
+  } catch (error) {
+    console.error('Error processing file:', error);
+    showNotification('Failed to process file. Please check the file format.', 'error');
+    showImportSection('source');
+  }
+}
+
+async function processChatGPTZip(file) {
+  // Use JSZip library to extract conversations.json from the ZIP
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+      try {
+        // Load JSZip if not already loaded
+        if (!window.JSZip) {
+          await loadJSZip();
+        }
+
+        const zip = await window.JSZip.loadAsync(e.target.result);
+
+        // Find conversations.json file
+        let conversationsFile = null;
+        for (let filename in zip.files) {
+          if (filename.endsWith('conversations.json')) {
+            conversationsFile = zip.files[filename];
+            break;
+          }
+        }
+
+        if (!conversationsFile) {
+          throw new Error('conversations.json not found in ZIP file');
+        }
+
+        const content = await conversationsFile.async('text');
+        const data = JSON.parse(content);
+        resolve(data);
+
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function loadJSZip() {
+  // Dynamically load JSZip library
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    script.onload = () => resolve(window.JSZip);
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+async function extractInsightsFromConversations(conversations) {
+  const insights = [];
+  const seenTexts = new Set(); // To avoid duplicates
+
+  // Ensure conversations is an array
+  const convArray = Array.isArray(conversations) ? conversations : [conversations];
+
+  convArray.forEach(conv => {
+    // Extract insights from conversation title
+    if (conv.title && conv.title.length > 5 && !seenTexts.has(conv.title)) {
+      const category = categorizeText(conv.title);
+      if (category !== 'other') { // Only add if it's a meaningful category
+        insights.push({
+          id: generateId(),
+          category: category,
+          question: 'Conversation Topic',
+          answer: conv.title,
+          source: 'ChatGPT',
+          selected: true
+        });
+        seenTexts.add(conv.title);
+      }
+    }
+
+    // Extract insights from messages
+    if (conv.mapping) {
+      Object.values(conv.mapping).forEach(node => {
+        if (node.message && node.message.author && node.message.author.role === 'user') {
+          const content = node.message.content?.parts?.join(' ') || '';
+
+          // Extract meaningful insights from user messages
+          const extractedInfo = extractPersonalInfo(content);
+          extractedInfo.forEach(info => {
+            const key = `${info.question}:${info.answer}`;
+            if (!seenTexts.has(key)) {
+              insights.push({
+                id: generateId(),
+                ...info,
+                source: 'ChatGPT',
+                selected: true
+              });
+              seenTexts.add(key);
+            }
+          });
+        }
+      });
+    }
+  });
+
+  return insights;
+}
+
+function extractPersonalInfo(text) {
+  const insights = [];
+
+  // Skip very short texts
+  if (!text || text.length < 20) return insights;
+
+  // Pattern matching for personal information
+  const patterns = [
+    {
+      regex: /I (?:work|am employed|freelance) (?:as|at|in|for|with) ([^.!?,]+)/gi,
+      category: 'work',
+      question: 'Professional Background'
+    },
+    {
+      regex: /I (?:like|love|enjoy|prefer|am passionate about) ([^.!?,]+)/gi,
+      category: 'preferences',
+      question: 'Personal Preferences'
+    },
+    {
+      regex: /My favorite (\w+) (?:is|are) ([^.!?,]+)/gi,
+      category: 'preferences',
+      question: 'Favorites',
+      captureGroup: 2
+    },
+    {
+      regex: /I (?:am|'m) (?:interested in|passionate about|studying) ([^.!?,]+)/gi,
+      category: 'interests',
+      question: 'Interests'
+    },
+    {
+      regex: /I (?:live|reside|am based|am located) (?:in|at|near) ([^.!?,]+)/gi,
+      category: 'personal',
+      question: 'Location'
+    },
+    {
+      regex: /My (?:goal|objective|aim|plan) is (?:to )?([^.!?,]+)/gi,
+      category: 'personal',
+      question: 'Goals'
+    },
+    {
+      regex: /I (?:use|prefer using|work with) ([^.!?,]+) for (?:coding|programming|development)/gi,
+      category: 'work',
+      question: 'Tech Stack'
+    }
+  ];
+
+  patterns.forEach(pattern => {
+    let match;
+    const regex = new RegExp(pattern.regex);
+    while ((match = regex.exec(text)) !== null) {
+      const captureGroup = pattern.captureGroup || 1;
+      const value = match[captureGroup].trim();
+
+      // Filter out too short or too long values
+      if (value.length > 3 && value.length < 200) {
+        // Clean up the value
+        const cleanedValue = value
+          .replace(/\s+/g, ' ')
+          .replace(/^(and|or|but|so|then)\s+/i, '');
+
+        if (cleanedValue.length > 3) {
+          insights.push({
+            category: pattern.category,
+            question: pattern.question,
+            answer: cleanedValue
+          });
+        }
+      }
+    }
+  });
+
+  return insights;
+}
+
+function categorizeText(text) {
+  const categories = {
+    work: ['work', 'job', 'career', 'professional', 'business', 'project', 'coding', 'programming', 'developer'],
+    interests: ['hobby', 'interest', 'passion', 'enjoy', 'fun', 'game', 'sport', 'music', 'art'],
+    preferences: ['prefer', 'like', 'favorite', 'best', 'love', 'choose'],
+    knowledge: ['learn', 'study', 'know', 'understand', 'research', 'education'],
+    personal: ['family', 'home', 'life', 'personal', 'health', 'travel']
+  };
+
+  const lowerText = text.toLowerCase();
+
+  for (const [category, keywords] of Object.entries(categories)) {
+    if (keywords.some(keyword => lowerText.includes(keyword))) {
+      return category;
+    }
+  }
+
+  return 'other'; // Default category
+}
+
+function displayImportPreview() {
+  // Update stats
+  document.getElementById('conversationCount').textContent =
+    new Set(extractedInsights.map(i => i.source)).size;
+  document.getElementById('insightCount').textContent = extractedInsights.length;
+  document.getElementById('topicCount').textContent =
+    new Set(extractedInsights.map(i => i.category)).size;
+
+  // Display insights list
+  renderImportPreviewList();
+  updateSelectedCount();
+}
+
+function renderImportPreviewList() {
+  const list = document.getElementById('importPreviewList');
+  const filter = document.getElementById('importCategoryFilter').value;
+
+  if (!list) return;
+
+  const filteredInsights = filter
+    ? extractedInsights.filter(i => i.category === filter)
+    : extractedInsights;
+
+  if (filteredInsights.length === 0) {
+    list.innerHTML = '<div class="import-empty-state">No insights found in this category</div>';
+    return;
+  }
+
+  list.innerHTML = filteredInsights.map(insight => `
+    <div class="import-preview-item ${selectedInsights.has(insight.id) ? 'selected' : ''}"
+         data-insight-id="${insight.id}">
+      <label class="import-item-checkbox">
+        <input type="checkbox"
+               ${selectedInsights.has(insight.id) ? 'checked' : ''}
+               data-insight-id="${insight.id}">
+        <div class="import-item-content">
+          <div class="import-item-header">
+            <span class="import-item-category">${getCategoryEmoji(insight.category)} ${insight.category}</span>
+            <span class="import-item-source">${insight.source}</span>
+          </div>
+          <div class="import-item-question">${escapeHtml(insight.question)}</div>
+          <div class="import-item-answer">${escapeHtml(insight.answer)}</div>
+        </div>
+      </label>
+    </div>
+  `).join('');
+
+  // Add event listeners to checkboxes
+  list.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+    checkbox.addEventListener('change', handleInsightSelection);
+  });
+}
+
+function getCategoryEmoji(category) {
+  const emojis = {
+    work: '💼',
+    interests: '🎯',
+    preferences: '💜',
+    knowledge: '📚',
+    personal: '👤',
+    other: '📝'
+  };
+  return emojis[category] || '📝';
+}
+
+function handleInsightSelection(event) {
+  const insightId = event.target.dataset.insightId;
+
+  if (event.target.checked) {
+    selectedInsights.add(insightId);
+  } else {
+    selectedInsights.delete(insightId);
+  }
+
+  updateSelectedCount();
+
+  // Update select all checkbox
+  const selectAll = document.getElementById('selectAllImports');
+  if (selectAll) {
+    selectAll.checked = selectedInsights.size === extractedInsights.length;
+  }
+}
+
+function handleSelectAll(event) {
+  if (event.target.checked) {
+    extractedInsights.forEach(insight => {
+      selectedInsights.add(insight.id);
+    });
+  } else {
+    selectedInsights.clear();
+  }
+
+  renderImportPreviewList();
+  updateSelectedCount();
+}
+
+function filterImportedInsights() {
+  renderImportPreviewList();
+}
+
+function updateSelectedCount() {
+  const countElement = document.getElementById('selectedCount');
+  if (countElement) {
+    countElement.textContent = selectedInsights.size;
+  }
+}
+
+function updateProgressText(text) {
+  const element = document.getElementById('importProgressText');
+  if (element) {
+    element.textContent = text;
+  }
+}
+
+async function confirmImport() {
+  const itemsToImport = extractedInsights.filter(insight =>
+    selectedInsights.has(insight.id)
+  );
+
+  if (itemsToImport.length === 0) {
+    showNotification('Please select at least one item to import', 'warning');
+    return;
+  }
+
+  showImportSection('progress');
+  updateProgressText('Importing data...');
+
+  try {
+    // Create import record with metadata
+    const importRecord = {
+      id: generateId(),
+      source: 'ChatGPT',
+      importDate: Date.now(),
+      itemCount: itemsToImport.length,
+      items: itemsToImport.map(item => ({
+        id: generateId(),
+        category: mapImportCategory(item.category),
+        question: item.question,
+        answer: item.answer,
+        originalCategory: item.category
+      }))
+    };
+
+    // Load existing imported data
+    const result = await chrome.storage.local.get(['importedData']);
+    const importedData = result.importedData || [];
+
+    // Add new import record
+    importedData.push(importRecord);
+
+    // Save imported data separately from profile items
+    await chrome.storage.local.set({ importedData });
+
+    showNotification(`Successfully imported ${itemsToImport.length} items from ChatGPT`, 'success');
+
+    // Show import history instead of closing
+    showImportHistory();
+
+  } catch (error) {
+    console.error('Error importing data:', error);
+    showNotification('Failed to import data', 'error');
+    showImportSection('preview');
+  }
+}
+
+// Add function to display import history
+function showImportHistory() {
+  showImportSection('history');
+  loadImportHistory();
+}
+
+async function loadImportHistory() {
+  const result = await chrome.storage.local.get(['importedData']);
+  const importedData = result.importedData || [];
+
+  const historyList = document.getElementById('importHistoryList');
+  if (!historyList) return;
+
+  if (importedData.length === 0) {
+    historyList.innerHTML = `
+      <div class="import-empty-state">
+        <p>No imported data yet. Click "Import New" to add your first ChatGPT export.</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Display import history - show most recent first
+  const sortedImports = [...importedData].reverse();
+  historyList.innerHTML = `
+    <div class="import-history-list">
+      ${sortedImports.map(record => `
+        <div class="import-history-item" data-import-id="${record.id}">
+          <div class="import-history-main">
+            <div class="import-history-info">
+              <span class="import-history-source">${record.source}</span>
+              <span class="import-history-date">${new Date(record.importDate).toLocaleDateString()}</span>
+            </div>
+            <span class="import-history-count">${record.itemCount} items</span>
+          </div>
+          <div class="import-history-actions">
+            <button class="button button-outline view-import-btn" data-import-id="${record.id}">
+              View Details
+            </button>
+            <button class="button button-outline delete-import-btn" data-import-id="${record.id}">
+              Delete
+            </button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  // Add event listeners
+  historyList.querySelectorAll('.view-import-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => viewImportDetails(e.target.dataset.importId));
+  });
+
+  historyList.querySelectorAll('.delete-import-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => deleteImport(e.target.dataset.importId));
+  });
+}
+
+async function viewImportDetails(importId) {
+  const result = await chrome.storage.local.get(['importedData']);
+  const importedData = result.importedData || [];
+  const record = importedData.find(r => r.id === importId);
+
+  if (!record) return;
+
+  // Display the details of this import
+  const detailsContent = document.getElementById('importDetailsContent');
+  if (!detailsContent) return;
+
+  detailsContent.innerHTML = `
+    <div class="import-details">
+      <div class="import-details-info">
+        <h4>Import from ${record.source}</h4>
+        <p class="import-details-date">Imported on ${new Date(record.importDate).toLocaleString()}</p>
+        <p class="import-details-count">${record.itemCount} insights extracted</p>
+      </div>
+      <div class="import-details-list">
+        ${record.items.map(item => `
+          <div class="import-detail-item">
+            <div class="import-detail-category">${getCategoryEmoji(item.originalCategory)} ${item.category}</div>
+            <div class="import-detail-question">${escapeHtml(item.question)}</div>
+            <div class="import-detail-answer">${escapeHtml(item.answer)}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  showImportSection('details');
+}
+
+async function deleteImport(importId) {
+  if (!confirm('Are you sure you want to delete this imported data?')) return;
+
+  const result = await chrome.storage.local.get(['importedData']);
+  let importedData = result.importedData || [];
+
+  // Remove the import record
+  importedData = importedData.filter(r => r.id !== importId);
+
+  // Save updated data
+  await chrome.storage.local.set({ importedData });
+
+  showNotification('Import deleted successfully');
+  loadImportHistory();
+}
+
+function mapImportCategory(category) {
+  // Map import categories to existing app categories
+  const categoryMap = {
+    work: 'Work & Professional',
+    interests: 'Hobbies',
+    preferences: 'Lifestyle & Preferences',
+    knowledge: 'Work & Professional',
+    personal: 'Social & Personal',
+    other: 'Other'
+  };
+
+  return categoryMap[category] || 'Other';
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// Initialize data import when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  initializeDataImport();
+});
 
 // Fix: Add subprofile selector to the existing setupEventListeners function
 // We need to find and modify the original function instead of overriding it

@@ -476,6 +476,22 @@
               </div>
               <p class="settings-card-description">Save and organize reusable prompts for quick access across AI platforms.</p>
             </div>
+
+            <!-- External Data Import Feature -->
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <div class="settings-card-title">
+                  <h3>External Data Import</h3>
+                  <span class="beta-badge">NEW</span>
+                </div>
+                <button class="settings-card-action" id="openDataImportBtn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9,18 15,12 9,6"></polyline>
+                  </svg>
+                </button>
+              </div>
+              <p class="settings-card-description">Import conversation history from ChatGPT and other AI platforms to enrich your profile.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -551,6 +567,166 @@
             </div>
             <div class="beta-feature-description">
               <p>Save and organize reusable prompts for quick access across AI platforms.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- External Data Import Modal -->
+    <div id="dataImportModal" class="modal-overlay" style="display: none;">
+      <div class="modal-content data-import-modal">
+        <div class="modal-header">
+          <h2>📥 External Data Import</h2>
+          <button id="closeDataImportModal" class="close-button">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Import Source Selection -->
+          <div id="importSourceSection">
+            <div class="import-intro">
+              <p>Import your conversation history and personal data from AI platforms to build a richer profile. Your data will be processed locally and stored securely.</p>
+            </div>
+
+            <div class="import-sources">
+              <h3>Select Data Source</h3>
+              <div class="source-cards">
+                <div class="source-card" data-source="chatgpt">
+                  <div class="source-icon">💬</div>
+                  <div class="source-info">
+                    <h4>ChatGPT</h4>
+                    <p>Import conversations from ChatGPT export files</p>
+                  </div>
+                  <button class="button button-outline source-select-btn" data-source="chatgpt">
+                    Select File
+                  </button>
+                </div>
+
+                <div class="source-card coming-soon" data-source="claude">
+                  <div class="source-icon">🤖</div>
+                  <div class="source-info">
+                    <h4>Claude</h4>
+                    <p>Coming soon</p>
+                  </div>
+                  <button class="button button-outline" disabled>
+                    Coming Soon
+                  </button>
+                </div>
+
+                <div class="source-card coming-soon" data-source="custom">
+                  <div class="source-icon">📄</div>
+                  <div class="source-info">
+                    <h4>Custom JSON</h4>
+                    <p>Coming soon</p>
+                  </div>
+                  <button class="button button-outline" disabled>
+                    Coming Soon
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Hidden file input -->
+            <input type="file" id="dataImportFileInput" accept=".zip,.json" style="display: none;">
+          </div>
+
+          <!-- Import Progress Section -->
+          <div id="importProgressSection" style="display: none;">
+            <div class="import-progress">
+              <div class="progress-spinner"></div>
+              <p id="importProgressText">Processing file...</p>
+            </div>
+          </div>
+
+          <!-- Import History Section -->
+          <div id="importHistorySection" style="display: none;">
+            <div class="import-history-header">
+              <h3>Imported Data</h3>
+              <button id="importNewBtn" class="button button-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Import New
+              </button>
+            </div>
+            <div id="importHistoryList">
+              <!-- Import history will be populated here -->
+            </div>
+          </div>
+
+          <!-- Import Details Section -->
+          <div id="importDetailsSection" style="display: none;">
+            <div class="import-details-header">
+              <button id="importDetailsBackBtn" class="button button-outline">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="15,18 9,12 15,6"></polyline>
+                </svg>
+                Back to History
+              </button>
+            </div>
+            <div id="importDetailsContent">
+              <!-- Import details will be populated here -->
+            </div>
+          </div>
+
+          <!-- Import Preview Section -->
+          <div id="importPreviewSection" style="display: none;">
+            <div class="import-preview-header">
+              <button id="importBackBtn" class="button button-outline">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="15,18 9,12 15,6"></polyline>
+                </svg>
+                Back
+              </button>
+              <h3>Review Extracted Data</h3>
+            </div>
+
+            <div class="import-stats">
+              <div class="stat-card">
+                <span class="stat-value" id="conversationCount">0</span>
+                <span class="stat-label">Conversations</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-value" id="insightCount">0</span>
+                <span class="stat-label">Insights Found</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-value" id="topicCount">0</span>
+                <span class="stat-label">Topics</span>
+              </div>
+            </div>
+
+            <div class="import-preview-content">
+              <div class="preview-filters">
+                <label>
+                  <input type="checkbox" id="selectAllImports" checked>
+                  Select All
+                </label>
+                <select id="importCategoryFilter">
+                  <option value="">All Categories</option>
+                  <option value="interests">Interests</option>
+                  <option value="preferences">Preferences</option>
+                  <option value="knowledge">Knowledge</option>
+                  <option value="work">Work</option>
+                  <option value="personal">Personal</option>
+                </select>
+              </div>
+
+              <div id="importPreviewList" class="import-preview-list">
+                <!-- Extracted insights will be populated here -->
+              </div>
+            </div>
+
+            <div class="import-actions">
+              <button id="cancelImportBtn" class="button button-outline">Cancel</button>
+              <button id="confirmImportBtn" class="button button-primary">
+                Import Selected (<span id="selectedCount">0</span>)
+              </button>
             </div>
           </div>
         </div>

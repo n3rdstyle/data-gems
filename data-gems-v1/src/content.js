@@ -316,12 +316,16 @@ function createInjectButton() {
     if (item) {
       e.preventDefault();
       e.stopPropagation();
-      
+
       const action = item.dataset.action;
       hideDropdown(container, dropdown);
-      
+
       if (action === 'full') {
         await injectProfile(button, null); // Full profile
+      } else if (action.startsWith('import:')) {
+        // Handle imported data injection
+        const importId = action.substring(7); // Remove 'import:' prefix
+        await injectImportedData(button, importId);
       } else {
         await injectProfile(button, action); // Subprofile ID
       }
@@ -367,18 +371,23 @@ function hideDropdown(container, dropdown) {
 // Load subprofiles for dropdown
 async function loadSubprofilesForDropdown(dropdown) {
   try {
+    // Load subprofiles
     const response = await chrome.runtime.sendMessage({ type: 'LOAD_SUBPROFILES' });
-    
-    if (response?.ok && response.subprofiles) {
+
+    // Load imported external data
+    const importedDataResult = await chrome.storage.local.get(['importedData']);
+    const importedData = importedDataResult.importedData || [];
+
+    // Remove loading message
+    const loading = dropdown.querySelector('.dropdown-loading');
+    if (loading) {
+      loading.remove();
+    }
+
+    // Add subprofile items
+    if (response?.ok && response.subprofiles && response.subprofiles.length > 0) {
       const subprofiles = response.subprofiles;
-      
-      // Remove loading message
-      const loading = dropdown.querySelector('.dropdown-loading');
-      if (loading) {
-        loading.remove();
-      }
-      
-      // Add subprofile items
+
       subprofiles.forEach(subprofile => {
         const item = document.createElement('div');
         item.className = 'dropdown-item';
@@ -389,12 +398,44 @@ async function loadSubprofilesForDropdown(dropdown) {
         `;
         dropdown.appendChild(item);
       });
-    } else {
-      // Hide loading message if no subprofiles
-      const loading = dropdown.querySelector('.dropdown-loading');
-      if (loading) {
-        loading.textContent = 'No subprofiles found';
+    }
+
+    // Add external files section if there are imported files
+    if (importedData.length > 0) {
+      // Add divider if there are subprofiles
+      if (response?.ok && response.subprofiles && response.subprofiles.length > 0) {
+        const divider = document.createElement('div');
+        divider.className = 'dropdown-divider';
+        divider.style.cssText = 'height: 1px; background: #e5e7eb; margin: 8px 0;';
+        dropdown.appendChild(divider);
       }
+
+      // Add External Files header
+      const header = document.createElement('div');
+      header.className = 'dropdown-header';
+      header.style.cssText = 'padding: 6px 12px; font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;';
+      header.textContent = 'External Files';
+      dropdown.appendChild(header);
+
+      // Add each imported file as an option
+      importedData.forEach(importRecord => {
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.dataset.action = `import:${importRecord.id}`;
+        item.innerHTML = `
+          <span class="item-label">📥 ${importRecord.source} Import</span>
+          <span class="item-description">${new Date(importRecord.importDate).toLocaleDateString()} • ${importRecord.itemCount} items</span>
+        `;
+        dropdown.appendChild(item);
+      });
+    }
+
+    // Show message if no subprofiles and no imported data
+    if ((!response?.ok || !response.subprofiles || response.subprofiles.length === 0) && importedData.length === 0) {
+      const emptyMessage = document.createElement('div');
+      emptyMessage.className = 'dropdown-loading';
+      emptyMessage.textContent = 'No subprofiles or imported data found';
+      dropdown.appendChild(emptyMessage);
     }
   } catch (error) {
     console.error('Failed to load subprofiles:', error);
@@ -632,6 +673,212 @@ function buildContextText(contextItems) {
   
   return text.trim();
 }
+
+// Inject imported external data
+async function injectImportedData(button, importId) {
+  console.log('Injecting imported data, ID:', importId);
+  button.classList.add('loading');
+  button.querySelector('span').textContent = 'Loading';
+
+  try {
+    // Get imported data from storage
+    const result = await chrome.storage.local.get(['importedData']);
+    const importedData = result.importedData || [];
+
+    // Find the specific import record
+    const importRecord = importedData.find(record => record.id === importId);
+
+    if (!importRecord) {
+      throw new Error('Import record not found');
+    }
+
+    console.log('Found import record:', importRecord.source, importRecord.itemCount, 'items');
+
+    // Create profile JSON with imported data
+    const importedProfileData = {
+      version: "2.2",
+      type: "imported_data",
+      source: importRecord.source,
+      importDate: importRecord.importDate,
+      timestamp: new Date().toISOString(),
+      itemCount: importRecord.itemCount,
+      data: {}
+    };
+
+    // Group items by category for better organization
+    const categorizedData = {};
+    importRecord.items.forEach(item => {
+      const category = item.category || 'Other';
+      if (!categorizedData[category]) {
+        categorizedData[category] = [];
+      }
+      categorizedData[category].push({
+        question: item.question,
+        answer: item.answer
+      });
+    });
+
+    importedProfileData.data = categorizedData;
+
+    // Create a file with the imported data
+    const filename = `imported-${importRecord.source.toLowerCase()}-${new Date(importRecord.importDate).toISOString().split('T')[0]}.json`;
+    const jsonBlob = new Blob([JSON.stringify(importedProfileData, null, 2)], { type: 'application/json' });
+    const file = new File([jsonBlob], filename, { type: 'application/json' });
+
+    // Use the same file upload logic as the regular profile injection
+    await uploadFileToChat(file);
+
+    // Update button state
+    button.classList.remove('loading');
+    button.querySelector('span').textContent = 'Imported data injected!';
+
+    // Reset button after delay
+    setTimeout(() => {
+      button.querySelector('span').textContent = 'Inject my profile';
+    }, 2000);
+
+  } catch (error) {
+    console.error('Failed to inject imported data:', error);
+    button.classList.remove('loading');
+    button.querySelector('span').textContent = 'Injection failed';
+
+    setTimeout(() => {
+      button.querySelector('span').textContent = 'Inject my profile';
+    }, 2000);
+  }
+}
+
+// Reusable file upload function extracted from profile injection
+async function uploadFileToChat(file) {
+  const hostname = window.location.hostname;
+  let fileInput = null;
+  let fileInputSelectors = [];
+
+  // Platform-specific file input selectors
+  if (hostname.includes('chatgpt.com') || hostname.includes('chat.openai.com')) {
+    fileInputSelectors = ['input[type="file"]', 'input[accept*="text"]', 'input[accept*="json"]'];
+  } else if (hostname.includes('claude.ai')) {
+    fileInputSelectors = ['input[type="file"]', 'input[accept]'];
+  } else if (hostname.includes('gemini.google.com')) {
+    fileInputSelectors = [
+      'input[type="file"]',
+      'input[accept]',
+      'input[accept*="application"]',
+      'input[accept*="text"]',
+      'input[accept*="json"]',
+      'input.file-upload-input',
+      '[class*="file"] input[type="file"]'
+    ];
+  } else if (hostname.includes('perplexity.ai')) {
+    fileInputSelectors = ['input[type="file"]', 'input[accept]'];
+  }
+
+  // Try to find existing file input
+  for (const selector of fileInputSelectors) {
+    fileInput = document.querySelector(selector);
+    if (fileInput) break;
+  }
+
+  // If no file input found, try to trigger file upload button click
+  if (!fileInput) {
+    console.log('No file input found, looking for upload button...');
+
+    // Common upload button selectors
+    let uploadButtonSelectors = [
+      'button[aria-label*="attach" i]',
+      'button[aria-label*="upload" i]',
+      'button[aria-label*="file" i]',
+      '[data-testid*="file" i]',
+      'button svg[class*="paperclip" i]',
+      'button svg[class*="attach" i]',
+      'button[title*="attach" i]',
+      'button[title*="upload" i]'
+    ];
+
+    // Platform-specific upload button selectors
+    if (hostname.includes('gemini.google.com')) {
+      uploadButtonSelectors = [
+        'button[aria-label*="upload" i]',
+        'button.upload-card-button',
+        'button[class*="upload"]',
+        'button mat-icon-button[aria-label*="upload" i]',
+        ...uploadButtonSelectors
+      ];
+    }
+
+    let uploadButton = null;
+    for (const selector of uploadButtonSelectors) {
+      uploadButton = document.querySelector(selector);
+      if (uploadButton) {
+        console.log('Found upload button:', uploadButton);
+        uploadButton.click();
+
+        // Wait for file input to appear
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Try multiple times to find the file input
+        let attempts = 0;
+        while (!fileInput && attempts < 5) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+
+          // First try our specific selectors
+          for (const selector of fileInputSelectors) {
+            fileInput = document.querySelector(selector);
+            if (fileInput) break;
+          }
+
+          // If not found, search all file inputs on the page
+          if (!fileInput) {
+            const allFileInputs = document.querySelectorAll('input[type="file"]');
+            for (const input of allFileInputs) {
+              // Check if the input is visible or recently added
+              const rect = input.getBoundingClientRect();
+              const isVisible = rect.width > 0 && rect.height > 0;
+              const computedStyle = window.getComputedStyle(input);
+              const isDisplayed = computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden';
+
+              // Take any file input that's not explicitly hidden
+              if (!fileInput && (isVisible || isDisplayed || input.offsetParent !== null)) {
+                fileInput = input;
+                console.log('Selected file input:', input);
+                break;
+              }
+            }
+          }
+
+          attempts++;
+          console.log(`File input search attempt ${attempts}, found:`, !!fileInput);
+        }
+
+        if (fileInput) {
+          console.log('Found file input after', attempts, 'attempts');
+        }
+        break;
+      }
+    }
+  }
+
+  if (!fileInput) {
+    throw new Error('Could not find file input on this platform');
+  }
+
+  // Upload the file
+  console.log('Uploading file to:', fileInput);
+
+  // Create a DataTransfer object with the file
+  const dataTransfer = new DataTransfer();
+  dataTransfer.items.add(file);
+
+  // Set the files property
+  fileInput.files = dataTransfer.files;
+
+  // Trigger change event
+  const changeEvent = new Event('change', { bubbles: true });
+  fileInput.dispatchEvent(changeEvent);
+
+  console.log('File uploaded successfully');
+}
+
 
 // Attach profile as a file
 async function injectProfile(button, subprofileId = null) {
