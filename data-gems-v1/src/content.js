@@ -2274,7 +2274,7 @@ async function initialize() {
       // Check if new URL is a new chat and reinitialize accordingly
       setTimeout(() => {
         console.log('🔍 Checking new chat state after URL change...');
-        
+
         if (isNewChatState()) {
           console.log('✅ New URL is a new chat, resetting auto-injection flag and adding button');
           // Reset auto-injection flag for new chat
@@ -2282,10 +2282,24 @@ async function initialize() {
           console.log('🔄 Reset hasAutoInjected to false for new chat');
           addInjectButtons(true, true); // Force cleanup, skip new chat check (we just checked)
         } else {
-          console.log('📝 New URL is existing chat, removing button');
-          removeAllInjectButtons('navigated to existing chat');
+          // Be conservative about removing on navigation - only remove if clearly in existing conversation
+          const existingButtons = document.querySelectorAll('.prompt-profile-inject-container');
+          if (existingButtons.length > 0) {
+            // Check if we're actually in an active conversation with messages
+            const hasActiveConversation = document.querySelectorAll(
+              '[data-testid*="conversation"], .conversation, [class*="message"], [class*="Message"], ' +
+              '[role="article"], article, [data-testid*="message"], [data-testid*="conversation-turn"]'
+            ).length > 2; // Need more than just system/welcome messages
+
+            if (hasActiveConversation) {
+              console.log('📝 Navigated to active conversation, removing button');
+              removeAllInjectButtons('navigated to active conversation');
+            } else {
+              console.log('📝 Navigation detected but no clear conversation, keeping button');
+            }
+          }
         }
-      }, 1500); // Increased delay to let page content load
+      }, 2000); // Increased delay to let page content load completely
     }
   });
   
@@ -2342,13 +2356,28 @@ async function initialize() {
           console.log('✅ DOM change detected new chat, adding button');
           addInjectButtons(false, true); // Don't force cleanup, skip new chat check
         } else {
-          console.log('📝 DOM change but not new chat, ensuring no buttons exist');
+          // Be much more conservative about removing buttons on DOM changes
           const existingButtons = document.querySelectorAll('.prompt-profile-inject-container');
           if (existingButtons.length > 0) {
-            removeAllInjectButtons('DOM change - not new chat');
+            // Only remove if we have clear evidence of an active conversation
+            const messageElements = document.querySelectorAll(
+              '[data-testid*="conversation"], .conversation, [class*="message"], [class*="Message"], ' +
+              '[role="article"], article, [data-testid*="message"], [data-testid*="conversation-turn"]'
+            );
+            const hasVisibleMessages = Array.from(messageElements).some(el =>
+              el.offsetParent !== null && // Element is visible
+              (el.textContent || '').trim().length > 10 // Has substantial content
+            );
+
+            if (hasVisibleMessages) {
+              console.log('📝 DOM change with visible messages, scheduling gentle removal...');
+              removeAllInjectButtons('DOM change - conversation detected', false);
+            } else {
+              console.log('📝 DOM change but no clear conversation, keeping buttons');
+            }
           }
         }
-      }, 1000); // Increased delay to allow DOM to settle
+      }, 1500); // Increased delay to allow DOM to settle completely
     } else if (hasRemovedElements) {
       // Elements were removed, might affect new chat state - check later
       console.log('📤 Elements removed from DOM, will check chat state later...');
@@ -2360,13 +2389,13 @@ async function initialize() {
     subtree: true
   });
   
-  // Check periodically for new chats that might need buttons - less frequently to avoid interference
+  // Check periodically for new chats that might need buttons - much less aggressive
   setInterval(() => {
     const existingButtons = document.querySelectorAll('.prompt-profile-inject-container').length;
     const isNewChat = isNewChatState();
-    
+
     console.log('⏰ Periodic check - buttons:', existingButtons, 'isNewChat:', isNewChat, 'hasAutoInjected:', hasAutoInjected, 'autoInjectEnabled:', autoInjectSettings.enabled);
-    
+
     if (isNewChat && existingButtons === 0) {
       // If auto-injection is enabled and already performed, don't do anything
       if (autoInjectSettings.enabled && hasAutoInjected) {
@@ -2376,12 +2405,26 @@ async function initialize() {
       console.log('🔍 New chat detected without button, adding...');
       addInjectButtons(false, true); // Don't force cleanup, skip new chat check
     } else if (!isNewChat && existingButtons > 0) {
-      console.log('📝 Not in new chat but buttons exist, scheduling gentle removal...');
-      removeAllInjectButtons('periodic check - not new chat', false); // Don't force immediate removal
+      // Be much more conservative about removing buttons - only remove if we're clearly in an active conversation
+      const messageElements = document.querySelectorAll(
+        '[data-testid*="conversation"], .conversation, [class*="message"], [class*="Message"], ' +
+        '[role="article"], article, [data-testid*="message"], [data-testid*="conversation-turn"]'
+      );
+      const hasMessages = messageElements.length > 0;
+      const hasTypedContent = Array.from(document.querySelectorAll('div[contenteditable="true"], textarea'))
+        .some(input => (input.textContent || input.value || '').trim().length > 0);
+
+      // Only remove if there are clearly messages AND user has typed something
+      if (hasMessages && hasTypedContent) {
+        console.log('📝 Clear existing conversation with content, scheduling gentle removal...');
+        removeAllInjectButtons('periodic check - active conversation', false);
+      } else {
+        console.log('📝 Ambiguous state, keeping buttons to avoid false positives');
+      }
     } else {
       console.log('✅ Periodic check: state is correct');
     }
-  }, 20000); // Reduced frequency to every 20 seconds
+  }, 30000); // Reduced frequency to every 30 seconds
 }
 
 // Prompt Command Functionality
