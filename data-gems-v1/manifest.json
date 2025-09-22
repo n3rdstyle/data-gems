@@ -22,7 +22,8 @@
     "storage",
     "scripting",
     "activeTab",
-    "contextMenus"
+    "contextMenus",
+    "tabs"
   ],
   "host_permissions": [
     "https://chatgpt.com/*",
@@ -45,6 +46,12 @@
       "js": ["src/content.js"],
       "run_at": "document_end",
       "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["quiz.html"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

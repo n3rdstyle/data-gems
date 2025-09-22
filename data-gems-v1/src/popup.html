@@ -161,13 +161,22 @@
             <h3 id="emptyTitle" class="empty-title">Start building your profile</h3>
             <p id="emptyDescription" class="empty-description">Add personal context to help AI assistants understand you better. Your data stays private and local.</p>
           </div>
-          <button id="firstAddBtn" class="button button-gradient">
-            <svg class="icon" viewBox="0 0 24 24">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Add new preference
-          </button>
+          <div class="button-group">
+            <button id="firstAddBtn" class="button button-gradient">
+              <svg class="icon" viewBox="0 0 24 24">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Add new preference
+            </button>
+            <button id="quickQuizBtn" class="button button-outline-gradient">
+              <svg class="icon" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" fill="none" stroke-width="2"/>
+                <path d="M12 7v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              Quick Quiz
+            </button>
+          </div>
         </div>
 
         <!-- Context Items List (hidden by default) -->
@@ -178,13 +187,22 @@
 
       <!-- Footer Add Button (hidden by default) -->
       <div id="footer" class="footer" style="display: none;">
-        <button id="addBtn" class="button button-gradient button-full">
-          <svg class="icon" viewBox="0 0 24 24">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          Add new preference
-        </button>
+        <div class="button-group footer-buttons">
+          <button id="addBtn" class="button button-gradient">
+            <svg class="icon" viewBox="0 0 24 24">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add new preference
+          </button>
+          <button id="footerQuizBtn" class="button button-outline-gradient">
+            <svg class="icon" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" fill="none" stroke-width="2"/>
+              <path d="M12 7v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Quick Quiz
+          </button>
+        </div>
       </div>
     </div>
 
@@ -752,6 +770,90 @@
       </div>
     </div>
 
+    <!-- Quick Quiz Page -->
+    <div id="quickQuizPage" class="quiz-page" style="display: none;">
+      <div class="quiz-container">
+        <!-- Quiz Header -->
+        <div class="quiz-header">
+          <button id="quizBackBtn" class="quiz-back-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15,18 9,12 15,6"></polyline>
+            </svg>
+          </button>
+          <div class="quiz-progress">
+            <div class="progress-text">
+              <span id="quizCounter">1</span> preferences added
+            </div>
+            <div class="progress-bar">
+              <div id="quizProgressFill" class="progress-fill"></div>
+            </div>
+          </div>
+          <button id="quizExitBtn" class="quiz-exit-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Quiz Content -->
+        <div class="quiz-content">
+          <div class="quiz-question-container">
+            <h2 id="quizQuestion" class="quiz-question">Do you enjoy cooking at home?</h2>
+            <div class="quiz-category-badge">
+              <span id="quizCategory">🍽️ Food & Drink</span>
+            </div>
+          </div>
+
+          <!-- Answer Buttons -->
+          <div class="quiz-answers">
+            <button id="quizYesBtn" class="quiz-answer-btn quiz-yes">
+              <span class="answer-text">Yes</span>
+              <span class="answer-emoji">👍</span>
+            </button>
+            <button id="quizNoBtn" class="quiz-answer-btn quiz-no">
+              <span class="answer-text">No</span>
+              <span class="answer-emoji">👎</span>
+            </button>
+          </div>
+
+          <!-- Skip Button -->
+          <button id="quizSkipBtn" class="quiz-skip-btn">
+            Skip this question
+          </button>
+
+          <!-- Feedback Section -->
+          <div class="quiz-feedback">
+            <span class="feedback-label">Rate this question:</span>
+            <div class="feedback-buttons">
+              <button id="quizThumbsUp" class="feedback-btn thumbs-up" title="Good question">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                </svg>
+              </button>
+              <button id="quizThumbsDown" class="feedback-btn thumbs-down" title="Poor question">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quiz Footer with History -->
+        <div class="quiz-footer">
+          <button id="quizUndoBtn" class="quiz-undo-btn" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1,4 1,10 7,10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+            Undo last answer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="./quiz.js"></script>
     <script src="./popup.js"></script>
   </body>
 </html>

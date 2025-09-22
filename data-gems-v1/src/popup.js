@@ -990,10 +990,8 @@ function setupEventListeners() {
     if (activeSubprofileId) {
       await switchSubprofile(null); // Switch to full profile
     }
-    isAddingItem = true;
-    editingItem = null;
-    elements.contextForm.reset();
-    updateUI();
+    // Open edit modal in add mode
+    openEditModalForAdd();
   });
   
   elements.addBtn.addEventListener('click', async () => {
@@ -1004,6 +1002,26 @@ function setupEventListeners() {
     // Open edit modal in add mode
     openEditModalForAdd();
   });
+
+  // Quick Quiz buttons (both in empty state and footer)
+  const quickQuizBtn = document.getElementById('quickQuizBtn');
+  const footerQuizBtn = document.getElementById('footerQuizBtn');
+
+  const startQuiz = () => {
+    // Open quiz in new tab
+    chrome.tabs.create({
+      url: chrome.runtime.getURL('quiz.html'),
+      active: true
+    });
+  };
+
+  if (quickQuizBtn) {
+    quickQuizBtn.addEventListener('click', startQuiz);
+  }
+
+  if (footerQuizBtn) {
+    footerQuizBtn.addEventListener('click', startQuiz);
+  }
   
   // Form
   elements.contextForm.addEventListener('submit', handleSubmit);
@@ -3412,3 +3430,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Fix: Add subprofile selector to the existing setupEventListeners function
 // We need to find and modify the original function instead of overriding it
+// Export functions for quiz to use
+window.updateUI = updateUI;
+window.filterItems = filterItems;

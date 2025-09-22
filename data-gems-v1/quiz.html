@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Gems - Quick Preference Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Split Screen Layout */
+        .split-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .choice-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            padding: 40px;
+        }
+
+        .split-container:hover .choice-panel:not(:hover) {
+            opacity: 0.6;
+        }
+
+        .choice-panel {
+            transition: opacity 0.3s ease;
+        }
+
+        .choice-left {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .choice-right {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .choice-text {
+            font-size: clamp(28px, 4vw, 48px);
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.2;
+            max-width: 80%;
+            z-index: 2;
+        }
+
+        /* Header Overlay */
+        .quiz-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .quiz-progress {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            font-weight: 600;
+        }
+
+        .progress-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .progress-dot.active {
+            background: white;
+        }
+
+        .quiz-question-header {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 16px 32px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .question-text {
+            font-size: clamp(18px, 3vw, 24px);
+            margin-bottom: 8px;
+        }
+
+        .question-category {
+            font-size: 14px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .quiz-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        /* Bottom Controls */
+        .bottom-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 16px;
+            z-index: 100;
+        }
+
+        .bottom-btn {
+            padding: 12px 24px;
+            border-radius: 25px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bottom-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .bottom-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .control-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: white;
+        }
+
+        /* Loading State */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 64px;
+            height: 64px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 24px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .split-container {
+                flex-direction: column;
+            }
+
+            .choice-text {
+                font-size: clamp(22px, 6vw, 32px);
+            }
+
+            .quiz-question-header {
+                position: relative;
+                top: auto;
+                left: auto;
+                transform: none;
+                margin-bottom: 20px;
+            }
+
+            .bottom-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+        }
+
+        /* Success Message */
+        .success-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 32px;
+            background: rgba(16, 185, 129, 0.95);
+            color: white;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 18px;
+            backdrop-filter: blur(10px);
+            animation: popIn 0.3s ease;
+            z-index: 1000;
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading State -->
+    <div class="loading-overlay" id="loadingState">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading your preference quiz...</div>
+    </div>
+
+    <!-- Main Quiz -->
+    <div id="quizContent" style="display: none;">
+        <!-- Header with Progress -->
+        <div class="quiz-header">
+            <div class="quiz-progress">
+                <span>Added: </span>
+                <span id="progressCount">0</span>
+                <div style="display: flex; gap: 4px; margin-left: 12px;">
+                    <div class="progress-dot active"></div>
+                    <div class="progress-dot"></div>
+                    <div class="progress-dot"></div>
+                    <div class="progress-dot"></div>
+                    <div class="progress-dot"></div>
+                </div>
+            </div>
+            <div class="quiz-controls">
+                <button class="control-btn" id="thumbsUpBtn" title="Good question">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                    </svg>
+                </button>
+                <button class="control-btn" id="thumbsDownBtn" title="Poor question">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
+                    </svg>
+                </button>
+                <button id="exitBtn" class="control-btn" title="Exit quiz">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Question Overlay -->
+        <div class="quiz-question-header">
+            <div class="question-text" id="questionText">Do you enjoy cooking at home?</div>
+            <div class="question-category" id="questionCategory">Food & Drink</div>
+        </div>
+
+        <!-- Split Screen Choices -->
+        <div class="split-container">
+            <div class="choice-panel choice-left" id="yesChoice">
+                <div class="choice-text" id="yesText">Yes, I do</div>
+            </div>
+            <div class="choice-panel choice-right" id="noChoice">
+                <div class="choice-text" id="noText">No, I don't</div>
+            </div>
+        </div>
+
+        <!-- Bottom Controls -->
+        <div class="bottom-controls">
+            <button class="bottom-btn" id="undoBtn" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="1 4 1 10 7 10"></polyline>
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                </svg>
+                Undo
+            </button>
+            <button class="bottom-btn" id="skipBtn">
+                Skip
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12,5 19,12 12,19"></polyline>
+                </svg>
+            </button>
+        </div>
+
+    </div>
+
+    <script src="src/quiz-page.js"></script>
+</body>
+</html>
