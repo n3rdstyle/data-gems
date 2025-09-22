@@ -1001,10 +1001,8 @@ function setupEventListeners() {
     if (activeSubprofileId) {
       await switchSubprofile(null); // Switch to full profile
     }
-    isAddingItem = true;
-    editingItem = null;
-    elements.contextForm.reset();
-    updateUI();
+    // Open edit modal in add mode
+    openEditModalForAdd();
   });
   
   // Form
@@ -1378,9 +1376,16 @@ function openEditModal(item) {
   elements.editQuestion.value = item.question;
   elements.editAnswer.value = item.answer;
   
+  // Update modal title for editing
+  const modalTitle = elements.editModal.querySelector('h2');
+  if (modalTitle) modalTitle.textContent = 'Edit Preference';
+
+  // Show delete button for existing items
+  elements.deleteItemBtn.style.display = 'inline-flex';
+
   // Update favorite button state
   updateFavoriteButton(item.isFavorite || false);
-  
+
   // Show modal
   elements.editModal.style.display = 'flex';
 }
@@ -1392,6 +1397,33 @@ function closeEditModal() {
   // Hide custom category field
   elements.customCategoryGroup.style.display = 'none';
   elements.customCategory.required = false;
+}
+
+function openEditModalForAdd() {
+  currentEditingItem = null; // Clear any existing item
+
+  // Reset form fields for new item
+  elements.editCategory.value = 'Hobbies'; // Default category
+  elements.editQuestion.value = '';
+  elements.editAnswer.value = '';
+
+  // Hide custom category field initially
+  elements.customCategoryGroup.style.display = 'none';
+  elements.customCategory.required = false;
+  elements.customCategory.value = '';
+
+  // Update modal title for adding
+  const modalTitle = elements.editModal.querySelector('h2');
+  if (modalTitle) modalTitle.textContent = 'Add New Preference';
+
+  // Hide delete button for new items
+  elements.deleteItemBtn.style.display = 'none';
+
+  // Update favorite button state (not favorited for new items)
+  updateFavoriteButton(false);
+
+  // Show modal
+  elements.editModal.style.display = 'flex';
 }
 
 function updateFavoriteButton(isFavorite) {
@@ -1446,10 +1478,8 @@ function deleteCurrentItem() {
 }
 
 function saveEditedItem() {
-  if (!currentEditingItem) return;
-  
   let category = elements.editCategory.value;
-  
+
   // Handle custom category
   if (category === 'Other') {
     const customCategory = elements.customCategory.value.trim();
@@ -1459,28 +1489,48 @@ function saveEditedItem() {
     }
     category = customCategory;
   }
-  
+
   // Validate form
   if (!category || !elements.editQuestion.value.trim() || !elements.editAnswer.value.trim()) {
     showNotification('Please fill in all fields', 'error');
     return;
   }
-  
-  // Update the item
-  currentEditingItem.category = category;
-  currentEditingItem.question = elements.editQuestion.value.trim();
-  currentEditingItem.answer = elements.editAnswer.value.trim();
-  currentEditingItem.updatedAt = new Date();
-  
-  // Update in contextItems array
-  const itemIndex = contextItems.findIndex(item => item.id === currentEditingItem.id);
-  if (itemIndex !== -1) {
-    contextItems[itemIndex] = { ...currentEditingItem };
+
+  if (currentEditingItem) {
+    // Edit existing item
+    currentEditingItem.category = category;
+    currentEditingItem.question = elements.editQuestion.value.trim();
+    currentEditingItem.answer = elements.editAnswer.value.trim();
+    currentEditingItem.updatedAt = new Date();
+
+    // Update in contextItems array
+    const itemIndex = contextItems.findIndex(item => item.id === currentEditingItem.id);
+    if (itemIndex !== -1) {
+      contextItems[itemIndex] = { ...currentEditingItem };
+      saveItems();
+      filterItems();
+      updateUI();
+      closeEditModal();
+      showNotification('Preference updated successfully');
+    }
+  } else {
+    // Add new item
+    const newItem = {
+      id: Date.now().toString(),
+      category: category,
+      question: elements.editQuestion.value.trim(),
+      answer: elements.editAnswer.value.trim(),
+      isFavorite: elements.favoriteBtn.classList.contains('favorited'),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    contextItems.push(newItem);
     saveItems();
     filterItems();
     updateUI();
     closeEditModal();
-    showNotification('Item updated successfully');
+    showNotification('New preference added successfully');
   }
 }
 
