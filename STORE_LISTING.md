@@ -17,7 +17,6 @@ Data Gems is the personal context provider that makes AI assistants truly unders
 • **Smart Categories**: Organize your information across 10+ intuitive categories
 • **Quick Search**: Find and manage your personal data instantly
 • **Import/Export**: Backup and transfer your profile between devices
-• **Keyboard Shortcuts**: Power user features for quick profile insertion
 
 ### 🔒 Privacy First
 
@@ -44,12 +43,6 @@ Your personal data never leaves your device. No accounts, no cloud storage, no t
 • Claude AI
 • Google Gemini
 • Perplexity AI
-
-### ⌨️ Keyboard Shortcuts
-
-• Cmd/Ctrl + Shift + 1: Insert compact profile
-• Cmd/Ctrl + Shift + 2: Insert full profile
-• Cmd/Ctrl + Shift + 3: Insert last selection
 
 ---
 
@@ -82,10 +75,6 @@ Your personal data never leaves your device. No accounts, no cloud storage, no t
 **contextMenus**
 - Provide right-click options for quick profile insertion
 - Enhance user accessibility
-
-**commands**
-- Enable keyboard shortcuts for power users
-- Allow quick profile insertion without clicking
 
 ### Host Permissions:
 Access to AI platform domains to inject profile button and insert user data when requested:

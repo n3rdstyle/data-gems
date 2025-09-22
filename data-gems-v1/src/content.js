@@ -1618,8 +1618,9 @@ function isNewChatState() {
     // For Claude.ai, check multiple indicators of a new chat
     const indicators = {
       // Check if URL is the base URL or a new chat URL
-      isNewChatUrl: window.location.pathname === '/' || 
-                   window.location.pathname === '/chat' || 
+      isNewChatUrl: window.location.pathname === '/' ||
+                   window.location.pathname === '/chat' ||
+                   window.location.pathname === '/new' ||
                    window.location.pathname.startsWith('/chat/new'),
       
       // Check if there are no existing messages in the conversation
@@ -1660,7 +1661,8 @@ function isNewChatState() {
     
     console.log('🔍 New chat state check:', {
       ...indicators,
-      finalDecision: isNewChat
+      finalDecision: isNewChat,
+      url: window.location.href
     });
     
     return isNewChat;
@@ -1755,12 +1757,54 @@ function addInjectButtons(forceCleanup = false, skipNewChatCheck = false) {
   inputs.forEach((input, index) => {
     console.log(`Processing input ${index + 1}/${inputs.length}:`, input);
     
-    // Check if we already have a button for this input
-    const hasExistingButton = injectedButtons.has(input);
-    console.log('Has existing button:', hasExistingButton);
-    
+    // Check if we already have a button for this input (using both WeakMap and DOM check)
+    const hasExistingButtonInMap = injectedButtons.has(input);
+
+    // Check if button exists in DOM - look globally since buttons are positioned absolutely
+    let hasExistingButtonInDom = false;
+
+    // First, get the button from WeakMap if it exists
+    const buttonFromMap = injectedButtons.get(input);
+    if (buttonFromMap) {
+      // Check if the button from WeakMap still exists in DOM
+      hasExistingButtonInDom = document.body.contains(buttonFromMap);
+      if (!hasExistingButtonInDom) {
+        // Button was removed from DOM but WeakMap is stale - clean it up
+        console.log('🧹 Cleaning up stale WeakMap entry - button no longer in DOM');
+        injectedButtons.delete(input);
+      }
+    }
+
+    // If no button in WeakMap, do a broader DOM search
+    if (!hasExistingButtonInDom) {
+      // Look for any button container that might be associated with this input
+      // Check by proximity or by checking which input the button is positioned near
+      const allButtons = document.querySelectorAll('.prompt-profile-inject-container');
+      for (const button of allButtons) {
+        // Check if this button is positioned near this input (simple heuristic)
+        const buttonRect = button.getBoundingClientRect();
+        const inputRect = input.getBoundingClientRect();
+        const distance = Math.abs(buttonRect.top - inputRect.top) + Math.abs(buttonRect.left - inputRect.left);
+        if (distance < 100) { // Within 100px - likely the same input
+          hasExistingButtonInDom = true;
+          // Update WeakMap to fix the inconsistency
+          injectedButtons.set(input, button);
+          break;
+        }
+      }
+    }
+
+    const hasExistingButton = hasExistingButtonInMap || hasExistingButtonInDom;
+
+    console.log('Has existing button:', hasExistingButton, '(map:', hasExistingButtonInMap, ', dom:', hasExistingButtonInDom, ')');
+
     if (hasExistingButton) {
       console.log('Skipping: Button already exists for this input');
+      // Update WeakMap if DOM has button but map doesn't
+      if (!hasExistingButtonInMap && hasExistingButtonInDom) {
+        const existingButton = input.parentElement.querySelector('.prompt-profile-inject-container');
+        injectedButtons.set(input, existingButton);
+      }
       return;
     }
     
@@ -1899,6 +1943,47 @@ function addInjectButtons(forceCleanup = false, skipNewChatCheck = false) {
   }
 }
 
+// Reset all state for a truly fresh start
+function resetAllState(reason = 'unknown') {
+  console.log('🔄 === RESETTING ALL STATE ===', reason);
+
+  // Reset auto-injection flag
+  hasAutoInjected = false;
+
+  // Clear any pending auto-injection timeouts
+  clearAutoInjectTimeouts();
+
+  // Reset last button create time to prevent delays
+  lastButtonCreateTime = 0;
+
+  console.log('✅ All state reset complete');
+}
+
+// Debug function to analyze current button state
+function debugButtonState(context = 'unknown') {
+  const allButtons = document.querySelectorAll('.prompt-profile-inject-container');
+  const hostname = window.location.hostname;
+  const config = AI_PLATFORMS[hostname] || AI_PLATFORMS.default;
+  const inputs = document.querySelectorAll(config.selector);
+
+  console.log(`🐛 DEBUG BUTTON STATE (${context}):`);
+  console.log('  DOM buttons found:', allButtons.length);
+  console.log('  Valid inputs found:', inputs.length);
+
+  inputs.forEach((input, index) => {
+    const hasButtonInMap = injectedButtons.has(input);
+    const hasButtonInDom = input.parentElement && input.parentElement.querySelector('.prompt-profile-inject-container') !== null;
+    console.log(`  Input ${index + 1}: map=${hasButtonInMap}, dom=${hasButtonInDom}, element=`, input);
+  });
+
+  allButtons.forEach((button, index) => {
+    console.log(`  Button ${index + 1}: id=${button.id}, parent=`, button.parentElement);
+  });
+
+  console.log('  URL:', window.location.href);
+  console.log('  isNewChatState:', isNewChatState());
+}
+
 // Remove all injection buttons and clear the tracking map
 function removeAllInjectButtons(reason = 'unknown', force = false) {
   const timeSinceLastCreate = Date.now() - lastButtonCreateTime;
@@ -1914,8 +1999,19 @@ function removeAllInjectButtons(reason = 'unknown', force = false) {
   
   console.log('🗑️ Removing all inject buttons. Reason:', reason);
   console.trace('Button removal stack trace:');
+
+  // Debug state before removal
+  debugButtonState(`before removal - ${reason}`);
+
+  // Special logging for navigation-related removals
+  if (reason.includes('navigated') || reason.includes('URL change') || reason.includes('forced cleanup')) {
+    console.log('🚨 NAVIGATION-RELATED BUTTON REMOVAL DETECTED!');
+    console.log('🚨 This might be the cause of the "second chat" disappearance');
+    console.log('🚨 Current URL:', window.location.href);
+    console.log('🚨 Timestamp:', new Date().toISOString());
+  }
   
-  // Remove all button containers from DOM
+  // Remove all button containers from DOM and clean up WeakMap references
   document.querySelectorAll('.prompt-profile-inject-container').forEach(container => {
     console.log('Removing button container:', container.id);
 
@@ -1928,15 +2024,24 @@ function removeAllInjectButtons(reason = 'unknown', force = false) {
 
     container.remove();
   });
-  
+
+  // Clean up ALL WeakMap entries to prevent stale references
+  // Since we're removing all buttons, we need to clear all WeakMap entries
+  const allInputs = document.querySelectorAll('div[contenteditable="true"], textarea, input');
+  allInputs.forEach(input => {
+    if (injectedButtons.has(input)) {
+      console.log('🧹 Cleaning up WeakMap entry for input during removeAll');
+      injectedButtons.delete(input);
+    }
+  });
+
   // Also remove standalone buttons (in case some exist)
   document.querySelectorAll('.prompt-profile-inject-btn').forEach(button => {
     console.log('Removing standalone button');
     button.remove();
   });
   
-  // Clear the WeakMap to reset tracking
-  injectedButtons.clear();
+  // Note: WeakMap doesn't have clear() method, but entries will be garbage collected when DOM elements are removed
   
   console.log('All inject buttons removed');
 }
@@ -2266,21 +2371,55 @@ async function initialize() {
   
   // Detect URL changes for single-page applications like Claude.ai
   let currentUrl = window.location.href;
+  let previousPath = window.location.pathname;
   const urlObserver = new MutationObserver((mutations) => {
     if (window.location.href !== currentUrl) {
       console.log('🔄 URL changed from', currentUrl, 'to', window.location.href);
+      const newPath = window.location.pathname;
+      previousPath = new URL(currentUrl).pathname;
       currentUrl = window.location.href;
       
       // Check if new URL is a new chat and reinitialize accordingly
+      const currentPath = window.location.pathname;
+      const isChatRelatedPage = currentPath === '/' ||
+                                currentPath === '/chat' ||
+                                currentPath === '/new' ||
+                                currentPath.startsWith('/chat/');
+
+      // If navigating away from chat pages, remove buttons immediately
+      if (!isChatRelatedPage) {
+        console.log('📤 Navigated away from chat page, removing buttons immediately');
+        const existingButtons = document.querySelectorAll('.prompt-profile-inject-container');
+        if (existingButtons.length > 0) {
+          removeAllInjectButtons('navigated away from chat page');
+        }
+        return; // Don't continue with chat-related logic
+      }
+
+      // For chat-to-chat navigation, use delay to let DOM settle
+      const delay = (previousPath.startsWith('/chat') && currentPath.startsWith('/chat')) ? 2000 : 500;
       setTimeout(() => {
         console.log('🔍 Checking new chat state after URL change...');
 
         if (isNewChatState()) {
-          console.log('✅ New URL is a new chat, resetting auto-injection flag and adding button');
-          // Reset auto-injection flag for new chat
-          hasAutoInjected = false;
-          console.log('🔄 Reset hasAutoInjected to false for new chat');
-          addInjectButtons(true, true); // Force cleanup, skip new chat check (we just checked)
+          console.log('✅ New URL is a new chat, checking if we need to reset state...');
+          console.log('📍 Previous path:', previousPath, '→ Current path:', window.location.pathname);
+
+          // Only force cleanup if we're coming from a different type of page
+          const currentPath = window.location.pathname;
+          const needsCleanup = previousPath !== currentPath &&
+                              (previousPath !== '/new' || !currentPath.startsWith('/new'));
+
+          console.log('🤔 needsCleanup:', needsCleanup, '(paths different:', previousPath !== currentPath, ')');
+
+          if (needsCleanup) {
+            console.log('🔄 Coming from different page type, resetting state');
+            resetAllState('URL change to new chat from different page');
+            addInjectButtons(true, true); // Force cleanup, skip new chat check
+          } else {
+            console.log('✅ Staying on same page type, gentle addition');
+            addInjectButtons(false, true); // Don't force cleanup, skip new chat check
+          }
         } else {
           // Be conservative about removing on navigation - only remove if clearly in existing conversation
           const existingButtons = document.querySelectorAll('.prompt-profile-inject-container');
@@ -2299,7 +2438,7 @@ async function initialize() {
             }
           }
         }
-      }, 2000); // Increased delay to let page content load completely
+      }, delay); // Dynamic delay: 2000ms for chat-to-chat, 500ms for other navigation
     }
   });
   
@@ -2310,9 +2449,8 @@ async function initialize() {
   window.addEventListener('popstate', () => {
     console.log('Popstate event detected, reinitializing...');
     setTimeout(() => {
-      // Reset auto-injection flag on navigation
-      hasAutoInjected = false;
-      console.log('🔄 Reset hasAutoInjected to false for popstate navigation');
+      // Reset all state on navigation
+      resetAllState('popstate navigation');
       addInjectButtons(true); // Force cleanup on navigation
     }, 1000);
   });
@@ -2352,10 +2490,18 @@ async function initialize() {
     if (shouldCheck) {
       console.log('🔄 DOM changed, checking if it\'s a new chat...');
       setTimeout(() => {
-        if (isNewChatState()) {
-          console.log('✅ DOM change detected new chat, adding button');
-          addInjectButtons(false, true); // Don't force cleanup, skip new chat check
+        // Only check for new chat if we're on a chat-related URL
+        const currentPath = window.location.pathname;
+        const isChatRelatedPage = currentPath === '/' ||
+                                  currentPath === '/chat' ||
+                                  currentPath === '/new' ||
+                                  currentPath.startsWith('/chat/');
+
+        if (isChatRelatedPage && isNewChatState()) {
+          console.log('✅ DOM change detected new chat on chat page, adding button');
+          addInjectButtons(false, true); // Don't force cleanup, skip new chat check (already verified)
         } else {
+          console.log('📝 DOM change but not on chat page or not new chat, checking if buttons should be removed');
           // Be much more conservative about removing buttons on DOM changes
           const existingButtons = document.querySelectorAll('.prompt-profile-inject-container');
           if (existingButtons.length > 0) {
@@ -2391,10 +2537,35 @@ async function initialize() {
   
   // Check periodically for new chats that might need buttons - much less aggressive
   setInterval(() => {
-    const existingButtons = document.querySelectorAll('.prompt-profile-inject-container').length;
+    // More accurate button counting - check if any valid inputs have buttons
+    const hostname = window.location.hostname;
+    const config = AI_PLATFORMS[hostname] || AI_PLATFORMS.default;
+    const inputs = document.querySelectorAll(config.selector);
+
+    let buttonsFoundForInputs = 0;
+    inputs.forEach(input => {
+      const buttonFromMap = injectedButtons.get(input);
+      let hasValidButton = false;
+
+      if (buttonFromMap) {
+        // Check if button from WeakMap still exists in DOM
+        hasValidButton = document.body.contains(buttonFromMap);
+      }
+
+      if (hasValidButton) {
+        buttonsFoundForInputs++;
+      }
+    });
+
+    const existingButtons = buttonsFoundForInputs;
     const isNewChat = isNewChatState();
 
-    console.log('⏰ Periodic check - buttons:', existingButtons, 'isNewChat:', isNewChat, 'hasAutoInjected:', hasAutoInjected, 'autoInjectEnabled:', autoInjectSettings.enabled);
+    console.log('⏰ Periodic check - buttons:', existingButtons, 'inputs:', inputs.length, 'isNewChat:', isNewChat, 'hasAutoInjected:', hasAutoInjected, 'autoInjectEnabled:', autoInjectSettings.enabled);
+
+    // Debug state during periodic check if there's a mismatch
+    if ((isNewChat && existingButtons === 0) || (!isNewChat && existingButtons > 0)) {
+      debugButtonState('periodic check mismatch detected');
+    }
 
     if (isNewChat && existingButtons === 0) {
       // If auto-injection is enabled and already performed, don't do anything

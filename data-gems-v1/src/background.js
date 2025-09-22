@@ -1,7 +1,6 @@
 let profile = null;
 let subprofiles = [];
 let activeSubprofileId = null;
-let lastUsedTemplate = { kind: 'compact', selection: [] };
 
 const PROFILE_STORAGE_KEY = 'profile_data';
 const SUBPROFILES_STORAGE_KEY = 'subprofiles_data';
@@ -19,14 +18,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   } else if (info.menuItemId === 'insert_full') {
     handleInsert(tab.id, { kind: 'full' });
   }
-});
-
-chrome.commands.onCommand.addListener(async (command) => {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id) return;
-  if (command === 'insert-compact') return handleInsert(tab.id, { kind: 'compact' });
-  if (command === 'insert-full') return handleInsert(tab.id, { kind: 'full' });
-  if (command === 'insert-last') return handleInsert(tab.id, lastUsedTemplate ?? { kind: 'compact' });
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -280,7 +271,6 @@ async function generateSubprofileData(fullProfile, subprofileId, subprofiles) {
 async function handleInsert(tabId, selection) {
   try {
     if (!profile) profile = await loadProfileFromStorage();
-    lastUsedTemplate = selection;
     const text = generateInsertionText(selection, profile || {});
     await ensureContentScript(tabId);
     await chrome.tabs.sendMessage(tabId, { type: 'INSERT_TEXT', text });
