@@ -1833,31 +1833,63 @@ function addInjectButtons(forceCleanup = false, skipNewChatCheck = false) {
       });
     }
     
-    // Hide button when user starts typing (no longer a new chat)
-    input.addEventListener('input', () => {
-      // Small delay to check if input has content
-      setTimeout(() => {
-        const hasContent = input.tagName === 'TEXTAREA' || input.tagName === 'INPUT' 
-          ? input.value.trim().length > 0
-          : input.textContent.trim().length > 0;
-        
-        if (hasContent) {
-          // User started typing, no longer a new chat - hide button
-          console.log('🙈 User started typing, hiding inject button');
-          button.style.display = 'none';
-          // Remove from tracking
-          if (injectedButtons.has(input)) {
-            injectedButtons.delete(input);
-          }
-        } else {
-          // Input was cleared and we're still in new chat state, show button again
-          if (isNewChatState() && button.style.display === 'none') {
-            button.style.display = 'inline-flex';
-            console.log('🔄 Input cleared in new chat, showing inject button again');
-          }
+    // Monitor for message sending instead of just typing
+    // Look for send button clicks or enter key presses that actually send messages
+    const monitorForMessageSending = () => {
+      // Listen for send button clicks
+      const sendButtons = document.querySelectorAll('button[data-testid*="send"], button[aria-label*="send" i], button[type="submit"], [data-testid*="send-button"]');
+      sendButtons.forEach(sendBtn => {
+        if (!sendBtn.hasInjectionListener) {
+          sendBtn.hasInjectionListener = true;
+          sendBtn.addEventListener('click', () => {
+            console.log('📤 Send button clicked, hiding inject button');
+            if (button && button.style.display !== 'none') {
+              button.style.display = 'none';
+              if (injectedButtons.has(input)) {
+                injectedButtons.delete(input);
+              }
+            }
+          });
         }
-      }, 100);
-    });
+      });
+
+      // Listen for Enter key that sends message (Ctrl+Enter or just Enter depending on platform)
+      if (!input.hasEnterListener) {
+        input.hasEnterListener = true;
+        input.addEventListener('keydown', (e) => {
+          const isEnterToSend = e.key === 'Enter' && !e.shiftKey;
+          const isCtrlEnterToSend = e.key === 'Enter' && (e.ctrlKey || e.metaKey);
+
+          if (isEnterToSend || isCtrlEnterToSend) {
+            // Check if input has content that would be sent
+            const hasContent = input.tagName === 'TEXTAREA' || input.tagName === 'INPUT'
+              ? input.value.trim().length > 0
+              : input.textContent.trim().length > 0;
+
+            if (hasContent) {
+              console.log('⌨️ Enter pressed to send message, hiding inject button');
+              setTimeout(() => {
+                if (button && button.style.display !== 'none') {
+                  button.style.display = 'none';
+                  if (injectedButtons.has(input)) {
+                    injectedButtons.delete(input);
+                  }
+                }
+              }, 100);
+            }
+          }
+        });
+      }
+    };
+
+    // Initial setup and periodic re-setup for dynamically added send buttons
+    monitorForMessageSending();
+    const sendButtonInterval = setInterval(monitorForMessageSending, 2000);
+
+    // Clean up interval when button is removed
+    if (button) {
+      button.sendButtonInterval = sendButtonInterval;
+    }
   });
   
   if (buttonAdded) {
@@ -1886,6 +1918,14 @@ function removeAllInjectButtons(reason = 'unknown', force = false) {
   // Remove all button containers from DOM
   document.querySelectorAll('.prompt-profile-inject-container').forEach(container => {
     console.log('Removing button container:', container.id);
+
+    // Clean up any intervals associated with this button
+    const button = container.querySelector('.prompt-profile-inject-btn');
+    if (button && button.sendButtonInterval) {
+      clearInterval(button.sendButtonInterval);
+      console.log('Cleared send button monitoring interval');
+    }
+
     container.remove();
   });
   
