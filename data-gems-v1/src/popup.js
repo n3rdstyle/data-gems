@@ -30,6 +30,7 @@ const elements = {
   importBtn: document.getElementById('importBtn'),
   exportBtn: document.getElementById('exportBtn'),
   settingsBtn: document.getElementById('settingsBtn'),
+  betaLabBtn: document.getElementById('betaLabBtn'),
   profileAvatar: document.querySelector('.profile-avatar'),
   
   // Subprofile Creation Modal
@@ -96,11 +97,8 @@ const elements = {
   settingsModal: document.getElementById('settingsModal'),
   closeSettingsModal: document.getElementById('closeSettingsModal'),
   settingsMainView: document.getElementById('settingsMainView'),
-  settingsBetaLabView: document.getElementById('settingsBetaLabView'),
-  betaLabBackBtn: document.getElementById('betaLabBackBtn'),
-  
+
   // Beta Lab Elements
-  betaLabTeaser: document.getElementById('betaLabTeaser'),
   betaLabModal: document.getElementById('betaLabModal'),
   closeBetaLabModal: document.getElementById('closeBetaLabModal'),
   betaAutoInjectToggle: document.getElementById('betaAutoInjectToggle'),
@@ -415,24 +413,21 @@ function getCategoryIcon(category) {
 function createContextCard(item) {
   const card = document.createElement('div');
   card.className = 'context-card';
-  
+
   card.innerHTML = `
     <div class="context-content">
-      <div class="context-icon" style="background-color: ${getCategoryIcon(item.category).color}20">
-        ${getCategoryIcon(item.category).icon}
-      </div>
       <div class="context-text">
         <div class="context-question">${escapeHtml(item.question)}</div>
         <div class="context-answer">${escapeHtml(item.answer)}</div>
       </div>
     </div>
   `;
-  
+
   // Add event listeners
   card.addEventListener('click', () => {
     openEditModal(item);
   });
-  
+
   return card;
 }
 
@@ -715,15 +710,10 @@ function setupEventListeners() {
   // Settings
   elements.settingsBtn.addEventListener('click', openSettingsModal);
   elements.closeSettingsModal.addEventListener('click', closeSettingsModal);
-  
-  // Settings navigation
-  if (elements.betaLabBackBtn) {
-    elements.betaLabBackBtn.addEventListener('click', showSettingsMainView);
-  }
-  
-  // Beta Lab Event Listeners
-  if (elements.betaLabTeaser) {
-    elements.betaLabTeaser.addEventListener('click', openBetaLabModal);
+
+  // Beta Lab Button
+  if (elements.betaLabBtn) {
+    elements.betaLabBtn.addEventListener('click', openBetaLabModal);
   }
   
   if (elements.closeBetaLabModal) {
@@ -2192,36 +2182,29 @@ function updateBetaLabCurrentProfile() {
 }
 
 function openBetaLabModal() {
-  console.log('🧪 Opening Beta Lab view');
-  
+  console.log('🧪 Opening Beta Lab modal');
+
+  // Show the Beta Lab modal
+  elements.betaLabModal.style.display = 'flex';
+
   // Update auto-injection settings in Beta Lab from current settings
   elements.betaAutoInjectToggle.checked = autoInjectSettings.enabled;
   elements.betaAutoInjectDelay.value = autoInjectSettings.delay.toString();
-  
+
   // Set initial visibility state with CSS class
   if (autoInjectSettings.enabled) {
     elements.betaAutoInjectSettings.classList.add('show');
   } else {
     elements.betaAutoInjectSettings.classList.remove('show');
   }
-  
+
   // Update current profile display
   updateBetaLabCurrentProfile();
-  
-  // Show Beta Lab view and hide main settings view
-  showSettingsBetaLabView();
 }
 
 function showSettingsMainView() {
   console.log('📱 Showing settings main view');
   elements.settingsMainView.style.display = 'block';
-  elements.settingsBetaLabView.style.display = 'none';
-}
-
-function showSettingsBetaLabView() {
-  console.log('🧪 Showing Beta Lab view');
-  elements.settingsMainView.style.display = 'none';
-  elements.settingsBetaLabView.style.display = 'block';
 }
 
 function closeBetaLabModal() {
