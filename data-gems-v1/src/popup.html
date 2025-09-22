@@ -71,17 +71,27 @@
 
       <!-- Search and Filter Section -->
       <div class="search-filter-section">
+        <h2 class="section-title">Preference Center</h2>
         <div class="search-container">
-          <svg class="search-icon" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="m21 21-4.35-4.35"></path>
-          </svg>
-          <input type="text" id="searchInput" class="search-input" placeholder="Search your personal info">
+          <div class="search-input-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search your preferences">
+          </div>
+          <button class="category-toggle-btn" id="categoryToggleBtn" aria-label="Toggle categories" title="Toggle categories">
+            <svg class="chevron-icon-search" viewBox="0 0 24 24" width="16" height="16">
+              <polyline points="6,9 12,15 18,9"></polyline>
+            </svg>
+          </button>
         </div>
 
         <!-- Category Filter (hidden by default) -->
-        <div id="categoryFilter" class="category-filter" style="display: none;">
-          <!-- Categories will be dynamically added here -->
+        <div id="categoryFilterSection" class="category-filter-section" style="display: none;">
+          <div id="categoryFilter" class="category-filter">
+            <!-- Categories will be dynamically added here -->
+          </div>
         </div>
       </div>
 
@@ -156,7 +166,7 @@
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            Add new information
+            Add new preference
           </button>
         </div>
 
@@ -173,7 +183,7 @@
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          Add new information
+          Add new preference
         </button>
       </div>
     </div>
@@ -372,7 +382,7 @@
             <div class="settings-card data-management-card">
               <div class="settings-card-header">
                 <div class="settings-card-title">
-                  <h3>Data Management</h3>
+                  <h3>File Center</h3>
                 </div>
               </div>
               <p class="settings-card-description">Export your profile data or import from a backup</p>
@@ -400,7 +410,7 @@
             <div class="settings-card privacy-card">
               <div class="settings-card-header">
                 <div class="settings-card-title">
-                  <h3>Privacy Policy</h3>
+                  <h3>Privacy Center</h3>
                 </div>
               </div>
               <p class="settings-card-description">Your profile data is stored locally and never shared with external services</p>

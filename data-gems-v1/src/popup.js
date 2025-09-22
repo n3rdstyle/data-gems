@@ -67,7 +67,10 @@ const elements = {
   saveEditBtn: document.getElementById('saveEditBtn'),
   
   // Category Filter
+  searchFilterSection: document.querySelector('.search-filter-section'),
+  categoryFilterSection: document.getElementById('categoryFilterSection'),
   categoryFilter: document.getElementById('categoryFilter'),
+  categoryToggleBtn: document.getElementById('categoryToggleBtn'),
   
   // Form
   formSection: document.getElementById('formSection'),
@@ -135,6 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const result = await chrome.storage.local.get(['activeSubprofileId']);
   activeSubprofileId = result.activeSubprofileId || null;
   setupEventListeners();
+  initializeCategoryFilterState(); // Initialize collapsed/expanded state
   // updateUI() is already called in loadItems(), no need to call it again
   loadProfileImage(); // Load profile image after DOM is ready
   loadPersonalDescription(); // Load personal description after DOM is ready
@@ -229,8 +233,16 @@ function filterItems() {
   
   // Then apply search and category filters
   filteredItems = itemsToFilter.filter(item => {
-    const matchesCategory = !selectedCategory || item.category === selectedCategory;
-    const matchesSearch = !searchQuery || 
+    let matchesCategory;
+    if (!selectedCategory) {
+      matchesCategory = true; // Show all
+    } else if (selectedCategory === 'favorites') {
+      matchesCategory = item.isFavorite === true; // Show only favorites
+    } else {
+      matchesCategory = item.category === selectedCategory; // Show by category
+    }
+
+    const matchesSearch = !searchQuery ||
       item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -256,14 +268,14 @@ function updateUI() {
     elements.saveButtonText.textContent = 'Save';
   }
   
-  // Show/hide category filter
+  // Show/hide category filter section
   if (contextItems.length > 0 && !isAddingItem && !editingItem) {
     // Ensure itemsToFilter is initialized, fallback to contextItems if not
     const itemsForFilter = (itemsToFilter && itemsToFilter.length >= 0) ? itemsToFilter : contextItems;
     updateCategoryFilter(itemsForFilter); // Pass subprofile-filtered items
-    elements.categoryFilter.style.display = 'flex';
+    elements.categoryFilterSection.style.display = 'block';
   } else {
-    elements.categoryFilter.style.display = 'none';
+    elements.categoryFilterSection.style.display = 'none';
   }
   
   // Show/hide empty state or items list
@@ -305,19 +317,58 @@ function updateCategoryFilter(itemsToShow = contextItems) {
     acc[item.category] = (acc[item.category] || 0) + 1;
     return acc;
   }, {});
+
+  // Count favorites (with safety check)
+  const favoritesCount = itemsToShow.filter(item => item.isFavorite === true).length;
+
   console.log('📊 Categories found:', categories, 'with counts:', counts);
-  
+
   elements.categoryFilter.innerHTML = '';
-  
+
   // Add "All" category
   const allChip = createCategoryChip(null, 'All', itemsToShow.length);
   elements.categoryFilter.appendChild(allChip);
-  
+
+  // Add "Favorites" category if there are any favorites
+  if (favoritesCount > 0) {
+    const favoritesChip = createCategoryChip('favorites', 'Favorites', favoritesCount);
+    elements.categoryFilter.appendChild(favoritesChip);
+  }
+
   // Add other categories
   categories.forEach(category => {
     const chip = createCategoryChip(category, category, counts[category]);
     elements.categoryFilter.appendChild(chip);
   });
+}
+
+// Toggle category filter collapse/expand
+function toggleCategoryFilter() {
+  const section = elements.searchFilterSection;
+  const categorySection = elements.categoryFilterSection;
+  const isCollapsed = section.classList.contains('collapsed');
+
+  if (isCollapsed) {
+    section.classList.remove('collapsed');
+    categorySection.style.display = 'block';
+    localStorage.setItem('categoryFilterCollapsed', 'false');
+  } else {
+    section.classList.add('collapsed');
+    categorySection.style.display = 'none';
+    localStorage.setItem('categoryFilterCollapsed', 'true');
+  }
+}
+
+// Initialize category filter state from localStorage
+function initializeCategoryFilterState() {
+  const isCollapsed = localStorage.getItem('categoryFilterCollapsed') === 'true';
+  if (isCollapsed) {
+    elements.searchFilterSection.classList.add('collapsed');
+    elements.categoryFilterSection.style.display = 'none';
+  } else {
+    elements.searchFilterSection.classList.remove('collapsed');
+    elements.categoryFilterSection.style.display = 'block';
+  }
 }
 
 // Create category chip element
@@ -326,6 +377,11 @@ function createCategoryChip(value, label, count) {
   chip.className = 'category-chip';
   if (selectedCategory === value) {
     chip.classList.add('active');
+  }
+
+  // Add special class for favorites
+  if (value === 'favorites') {
+    chip.classList.add('favorites');
   }
   
   chip.innerHTML = `
@@ -400,6 +456,10 @@ function getCategoryIcon(category) {
     'Weather & Environment': {
       color: '#04214E',
       icon: '☀️'
+    },
+    'Favorites': {
+      color: '#FF5A5F',
+      icon: '❤️'
     }
   };
   
@@ -414,21 +474,75 @@ function createContextCard(item) {
   const card = document.createElement('div');
   card.className = 'context-card';
 
+  const gradientId = `heartGradient-${item.id}`;
+  const favoriteIcon = item.isFavorite === true ? `
+    <button class="context-favorite-btn favorited" data-item-id="${item.id}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="url(#${gradientId})" stroke="url(#${gradientId})" stroke-width="2">
+        <defs>
+          <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#04214E;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#87CEEB;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+      </svg>
+    </button>
+  ` : `
+    <button class="context-favorite-btn" data-item-id="${item.id}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+      </svg>
+    </button>
+  `;
+
   card.innerHTML = `
     <div class="context-content">
       <div class="context-text">
         <div class="context-question">${escapeHtml(item.question)}</div>
         <div class="context-answer">${escapeHtml(item.answer)}</div>
       </div>
+      <div class="context-actions">
+        ${favoriteIcon}
+      </div>
     </div>
   `;
 
   // Add event listeners
-  card.addEventListener('click', () => {
+  card.addEventListener('click', (e) => {
+    // Don't open modal if clicking on favorite button
+    if (e.target.closest('.context-favorite-btn')) {
+      return;
+    }
     openEditModal(item);
   });
 
+  // Add favorite button event listener
+  const favoriteBtn = card.querySelector('.context-favorite-btn');
+  if (favoriteBtn) {
+    favoriteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleItemFavorite(item.id);
+    });
+  }
+
   return card;
+}
+
+// Toggle favorite status for item in main list
+function toggleItemFavorite(itemId) {
+  const itemIndex = contextItems.findIndex(item => item.id === itemId);
+  if (itemIndex !== -1) {
+    const newFavoriteState = !contextItems[itemIndex].isFavorite;
+    contextItems[itemIndex].isFavorite = newFavoriteState;
+    saveItems();
+
+    // Re-render the items to update the UI
+    filterItems();
+    updateUI();
+
+    // Show notification
+    showNotification(newFavoriteState ? 'Added to favorites!' : 'Removed from favorites');
+  }
 }
 
 // Handle edit
@@ -520,22 +634,37 @@ function handleSubmit(e) {
 
 // Handle export
 async function handleExport() {
-  // Load personal description and prompt library from storage
+  // Load personal description, prompt library, and subprofiles from storage
   const storageData = await chrome.storage.local.get(['personalDescription', 'promptLibrary']);
+
+  // Load subprofiles
+  const subprofileResponse = await new Promise((resolve) => {
+    chrome.runtime.sendMessage({ type: 'LOAD_SUBPROFILES' }, resolve);
+  });
+  const currentSubprofiles = subprofileResponse?.ok ? subprofileResponse.subprofiles : [];
+
+  // Extract favorites from context items (with safety check)
+  const favorites = contextItems.filter(item => item.isFavorite === true);
 
   // Create comprehensive export data
   const exportData = {
-    version: '2.2',
+    version: '2.3',
     exportedAt: new Date().toISOString(),
     personalDescription: storageData.personalDescription || null,
     contextItems: contextItems,
+    favorites: favorites,
+    subprofiles: currentSubprofiles,
     promptLibrary: storageData.promptLibrary || [],
     // Include metadata
     metadata: {
       totalItems: contextItems.length,
+      totalFavorites: favorites.length,
+      totalSubprofiles: currentSubprofiles.length,
       totalPrompts: (storageData.promptLibrary || []).length,
       categories: [...new Set(contextItems.map(item => item.category))],
       hasPersonalDescription: !!storageData.personalDescription,
+      hasFavorites: favorites.length > 0,
+      hasSubprofiles: currentSubprofiles.length > 0,
       hasPromptLibrary: (storageData.promptLibrary || []).length > 0
     }
   };
@@ -565,19 +694,21 @@ function handleImport() {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = '.json';
-  
-  input.onchange = (e) => {
+
+  input.onchange = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const imported = JSON.parse(e.target.result);
           let itemsToImport = [];
           let importedPromptCount = 0;
+          let importedSubprofileCount = 0;
+          let importedFavoriteCount = 0;
 
-          // Handle new format (v2.2 with prompt library or v2.1 with personal description)
-          if (imported.version === '2.2' || imported.version === '2.1') {
+          // Handle new format (v2.3 with favorites and subprofiles, v2.2 with prompt library, or v2.1 with personal description)
+          if (imported.version === '2.3' || imported.version === '2.2' || imported.version === '2.1') {
             // Import personal description if present
             if (imported.personalDescription) {
               chrome.storage.local.set({ personalDescription: imported.personalDescription });
@@ -587,7 +718,7 @@ function handleImport() {
               }
             }
 
-            // Import prompt library if present (v2.2 feature)
+            // Import prompt library if present (v2.2+ feature)
             if (imported.promptLibrary && Array.isArray(imported.promptLibrary)) {
               chrome.storage.local.set({ promptLibrary: imported.promptLibrary });
               // Update the global promptLibrary variable if it exists
@@ -595,6 +726,30 @@ function handleImport() {
                 promptLibrary = imported.promptLibrary;
               }
               importedPromptCount = imported.promptLibrary.length;
+            }
+
+            // Import subprofiles if present (v2.3+ feature)
+            if (imported.subprofiles && Array.isArray(imported.subprofiles)) {
+              try {
+                // Import subprofiles via background script
+                const subprofileResponse = await new Promise((resolve) => {
+                  chrome.runtime.sendMessage({
+                    type: 'IMPORT_SUBPROFILES',
+                    subprofiles: imported.subprofiles
+                  }, resolve);
+                });
+
+                if (subprofileResponse?.ok) {
+                  console.log(`Imported ${imported.subprofiles.length} subprofiles`);
+                  importedSubprofileCount = imported.subprofiles.length;
+                  // Reload subprofiles to update UI
+                  await loadSubprofiles();
+                } else {
+                  console.error('Failed to import subprofiles:', subprofileResponse?.error);
+                }
+              } catch (error) {
+                console.error('Failed to import subprofiles:', error);
+              }
             }
 
             // Import context items if they exist
@@ -605,6 +760,9 @@ function handleImport() {
                 createdAt: new Date(item.createdAt || Date.now()),
                 updatedAt: new Date(item.updatedAt || Date.now())
               }));
+
+              // Count favorites in the imported data (with safety check)
+              importedFavoriteCount = imported.contextItems.filter(item => item.isFavorite === true).length;
             }
           }
           // Handle array format (original format)
@@ -659,13 +817,25 @@ function handleImport() {
 
               const skippedCount = itemsToImport.length - newItems.length;
               let message = `Imported ${newItems.length} context items`;
-              if (importedPromptCount > 0) {
-                message += ` and ${importedPromptCount} prompts`;
+
+              try {
+                if (importedPromptCount > 0) {
+                  message += `, ${importedPromptCount} prompts`;
+                }
+                if (importedSubprofileCount > 0) {
+                  message += `, ${importedSubprofileCount} subprofiles`;
+                }
+                if (importedFavoriteCount > 0) {
+                  message += ` (including ${importedFavoriteCount} favorites)`;
+                }
+                if (skippedCount > 0) {
+                  message += ` (${skippedCount} duplicates skipped)`;
+                }
+                showNotification(message + '!');
+              } catch (error) {
+                console.error('Error building notification message:', error);
+                showNotification(`Imported ${newItems.length} context items!`);
               }
-              if (skippedCount > 0) {
-                message += ` (${skippedCount} duplicates skipped)`;
-              }
-              showNotification(message + '!');
             } else {
               // Handle case where no context items but prompts were imported
               if (importedPromptCount > 0) {
@@ -702,7 +872,10 @@ function setupEventListeners() {
     filterItems();
     updateUI();
   });
-  
+
+  // Category Filter Toggle
+  elements.categoryToggleBtn.addEventListener('click', toggleCategoryFilter);
+
   // Import/Export
   elements.importBtn.addEventListener('click', handleImport);
   elements.exportBtn.addEventListener('click', handleExport);
@@ -983,27 +1156,44 @@ async function insertContextToPage() {
 async function buildContextText() {
   // Load personal description from storage
   const personalDescriptionData = await chrome.storage.local.get(['personalDescription']);
-  
+
   let text = '# Personal Context\n\n';
-  
+
   // Add personal description at the top if available
   if (personalDescriptionData.personalDescription) {
     text += `## About Me\n${personalDescriptionData.personalDescription}\n\n`;
   }
-  
-  if (contextItems.length === 0) {
+
+  // Use filtered items (respects subprofile selection) instead of all contextItems
+  const itemsToInclude = itemsToFilter && itemsToFilter.length >= 0 ? itemsToFilter : contextItems;
+
+  if (itemsToInclude.length === 0) {
     // Return text with just personal description if no context items
     return personalDescriptionData.personalDescription ? text : '';
   }
-  
-  const grouped = contextItems.reduce((acc, item) => {
+
+  // Separate favorites from regular items
+  const favorites = itemsToInclude.filter(item => item.isFavorite === true);
+  const regularItems = itemsToInclude.filter(item => item.isFavorite !== true);
+
+  // Add favorites section first if there are any
+  if (favorites.length > 0) {
+    text += `## ⭐ Favorites\n`;
+    favorites.forEach(item => {
+      text += `- **${item.question}**: ${item.answer}\n`;
+    });
+    text += '\n';
+  }
+
+  // Group regular items by category
+  const grouped = regularItems.reduce((acc, item) => {
     if (!acc[item.category]) {
       acc[item.category] = [];
     }
     acc[item.category].push(item);
     return acc;
   }, {});
-  
+
   Object.entries(grouped).forEach(([category, items]) => {
     text += `## ${category}\n`;
     items.forEach(item => {
@@ -1011,7 +1201,7 @@ async function buildContextText() {
     });
     text += '\n';
   });
-  
+
   return text;
 }
 
@@ -1799,6 +1989,14 @@ async function handleCustomSubprofileCreation(e) {
       selectedData.constraints[field] = true;
     }
   }
+
+  // Always include favorites in subprofiles (with safety check)
+  const favoriteItems = contextItems.filter(item => item.isFavorite === true);
+  favoriteItems.forEach(item => {
+    if (!selectedData.contextItems.includes(item.id)) {
+      selectedData.contextItems.push(item.id);
+    }
+  });
   
   // Create subprofile object
   const totalItems = selectedData.answers.length + selectedData.contextItems.length + 

@@ -926,25 +926,36 @@ async function injectProfile(button, subprofileId = null) {
       }, 2000);
       return;
     }
-    
-    // Create profile JSON with structured data including personal description
+
+    // Create profile JSON with structured data including personal description and favorites
     const profileData = {
-      version: "2.1",
+      version: "2.3",
       timestamp: new Date().toISOString(),
       personalDescription: personalDescription,
       categories: {},
+      favorites: [],
       totalItems: contextItems.length
     };
-    
-    // Group items by category
+
+    // Group items by category and collect favorites
     contextItems.forEach(item => {
       if (!profileData.categories[item.category]) {
         profileData.categories[item.category] = [];
       }
       profileData.categories[item.category].push({
         question: item.question,
-        answer: item.answer
+        answer: item.answer,
+        isFavorite: item.isFavorite === true
       });
+
+      // Add to favorites array if favorited
+      if (item.isFavorite === true) {
+        profileData.favorites.push({
+          question: item.question,
+          answer: item.answer,
+          category: item.category
+        });
+      }
     });
     
     // Create a blob and file with dynamic filename
@@ -1441,25 +1452,36 @@ async function performDirectInjection(inputElement, subprofileId = null) {
       console.log('⚠️ No profile data to inject');
       return;
     }
-    
-    // Create profile JSON with structured data including personal description
+
+    // Create profile JSON with structured data including personal description and favorites
     const profileData = {
-      version: "2.1",
+      version: "2.3",
       timestamp: new Date().toISOString(),
       personalDescription: personalDescription,
       categories: {},
+      favorites: [],
       totalItems: contextItems.length
     };
-    
-    // Group items by category
+
+    // Group items by category and collect favorites
     contextItems.forEach(item => {
       if (!profileData.categories[item.category]) {
         profileData.categories[item.category] = [];
       }
       profileData.categories[item.category].push({
         question: item.question,
-        answer: item.answer
+        answer: item.answer,
+        isFavorite: item.isFavorite === true
       });
+
+      // Add to favorites array if favorited
+      if (item.isFavorite === true) {
+        profileData.favorites.push({
+          question: item.question,
+          answer: item.answer,
+          category: item.category
+        });
+      }
     });
     
     // Create a blob and file with dynamic filename
@@ -2786,14 +2808,15 @@ function insertPromptText(inputElement, promptText) {
     const beforeCursor = currentText.substring(0, cursorPos);
     const afterCursor = currentText.substring(cursorPos);
     
-    // Find and replace the /prompt command if it exists
+    // Find and replace the /prompt:tag command if it exists
     let beforePromptCommand = beforeCursor;
     let afterPromptCommand = afterCursor;
-    
-    const promptIndex = beforeCursor.lastIndexOf('/prompt');
-    if (promptIndex !== -1) {
-      beforePromptCommand = beforeCursor.substring(0, promptIndex);
-      // Keep the afterCursor as is since /prompt should be at the cursor position
+
+    // Look for the complete /prompt:tag pattern at the end
+    const promptMatch = beforeCursor.match(/^(.*?)\/prompt:[a-zA-Z0-9\-_]+$/i);
+    if (promptMatch) {
+      beforePromptCommand = promptMatch[1];
+      // Keep the afterCursor as is since /prompt:tag should be at the cursor position
     }
     
     const newText = beforePromptCommand + promptText + afterPromptCommand;
@@ -2903,21 +2926,24 @@ function setupPromptCommandListener(inputElement) {
     console.log('📄 Current value:', `"${currentValue}"`);
     console.log('📄 Last value:', `"${lastValue}"`);
     
-    // Check if user typed "/prompt"
+    // Check if user typed a complete "/prompt:tag" command
     if (currentValue !== lastValue) {
-      console.log('🎯 VALUE CHANGED! Looking for /prompt command...');
-      const cursorPos = inputElement.contentEditable === 'true' 
+      const cursorPos = inputElement.contentEditable === 'true'
         ? getContentEditableCursorPosition(inputElement)
         : inputElement.selectionStart || 0;
-      
-      console.log('📍 Cursor position:', cursorPos);
-      
+
       // Look for "/prompt:tag" at the cursor position
       const textBeforeCursor = currentValue.substring(0, cursorPos);
-      console.log('📍 Text before cursor:', `"${textBeforeCursor}"`);
-      
+
       const promptCommandMatch = textBeforeCursor.match(/\/prompt:([a-zA-Z0-9\-_]+)$/i);
-      console.log('🎯 Prompt command match:', promptCommandMatch);
+
+      // Only log when we actually find a valid prompt command
+      if (promptCommandMatch) {
+        console.log('🎯 VALUE CHANGED! Looking for /prompt command...');
+        console.log('📍 Cursor position:', cursorPos);
+        console.log('📍 Text before cursor:', `"${textBeforeCursor}"`);
+        console.log('🎯 Prompt command match:', promptCommandMatch);
+      }
       
       if (promptCommandMatch) {
         const tag = promptCommandMatch[1]; // Extract the required tag
@@ -2951,24 +2977,14 @@ function setupPromptCommandListener(inputElement) {
             await insertPromptText(inputElement, selectedPrompt.text);
             
           } else {
-            console.log('❌ No prompt found with tag:', tag);
-            // Remove the "/prompt:tag" text even if no prompt found
-            const newValue = currentValue.replace(/\/prompt:[a-zA-Z0-9\-_]+$/i, '');
-            if (inputElement.contentEditable === 'true') {
-              inputElement.textContent = newValue;
-            } else {
-              inputElement.value = newValue;
-            }
+            console.log('❌ No prompt found with tag:', tag, '- leaving command as-is');
+            // Don't remove the command if no matching prompt is found
+            // Let the user know the tag doesn't exist but keep the text
           }
         } else {
-          console.log('❌ No prompts available in prompt library');
-          // Remove the "/prompt:tag" text even if no prompts available
-          const newValue = currentValue.replace(/\/prompt:[a-zA-Z0-9\-_]+$/i, '');
-          if (inputElement.contentEditable === 'true') {
-            inputElement.textContent = newValue;
-          } else {
-            inputElement.value = newValue;
-          }
+          console.log('❌ No prompts available in prompt library - leaving command as-is');
+          // Don't remove the command if no prompts are available at all
+          // The user might add prompts later or the library might not be loaded yet
         }
       }
     } else {

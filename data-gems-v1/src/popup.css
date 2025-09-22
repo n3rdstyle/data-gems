@@ -369,19 +369,37 @@ body {
 .search-container {
   position: relative;
   margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
 }
 
 .search-icon {
-  display: none;
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  stroke: var(--muted-foreground);
+  stroke-width: 2;
+  fill: none;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .search-input {
   width: 100%;
-  height: 48px;
-  padding: 14px 16px;
+  height: 40px;
+  padding: 10px 16px 10px 44px;
   background: var(--input-background);
   border: 1px solid var(--border);
-  border-radius: 24px;
+  border-radius: 20px;
   font-size: 14px;
   transition: all 0.2s ease;
   font-family: var(--font-family);
@@ -396,11 +414,108 @@ body {
 .search-input:focus {
   outline: none;
   border: 2px solid var(--foreground);
-  padding: 13px 15px;
+  padding: 9px 15px 9px 43px;
 }
 
 .search-input::placeholder {
   color: var(--muted-foreground);
+}
+
+/* Category Toggle Button */
+.category-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.category-toggle-btn:hover {
+  border-color: var(--foreground);
+  background: var(--muted);
+}
+
+.category-toggle-btn.active {
+  background: #04214E;
+  color: #FFFCF6;
+  border-color: #04214E;
+}
+
+
+.chevron-icon-search {
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  transition: transform 0.2s ease;
+}
+
+.search-filter-section.collapsed .chevron-icon-search {
+  transform: rotate(-90deg);
+}
+
+/* Category Filter Section - Collapsible */
+.category-filter-section {
+  margin-bottom: 16px;
+}
+
+.category-filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0 8px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.category-filter-title {
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+}
+
+.category-filter-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-small);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.category-filter-toggle:hover {
+  background: var(--muted);
+}
+
+.chevron-icon {
+  stroke: var(--muted-foreground);
+  transition: transform 0.2s ease;
+  stroke-width: 2;
+  fill: none;
+}
+
+.category-filter-section.collapsed .chevron-icon {
+  transform: rotate(-90deg);
+}
+
+.search-filter-section.collapsed .category-filter {
+  max-height: 0;
+  overflow: hidden;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 /* Category Filter - Airbnb Style */
@@ -411,6 +526,8 @@ body {
   gap: 8px;
   overflow-x: auto;
   scrollbar-width: none;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+  max-height: 200px; /* Default max height for expanded state */
 }
 
 .category-filter::-webkit-scrollbar {
@@ -455,6 +572,67 @@ body {
 .category-chip.active .category-count {
   background: rgba(255, 255, 255, 0.9);
   color: #04214E;
+}
+
+.category-chip.favorites {
+  background: linear-gradient(90deg, #04214E 0%, #87CEEB 100%);
+  color: white;
+  border: none;
+  position: relative;
+}
+
+.category-chip.favorites:not(.active) {
+  background: transparent;
+  color: #04214E;
+  border: none;
+}
+
+.category-chip.favorites:not(.active)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #04214E 0%, #87CEEB 100%);
+  border-radius: 30px;
+  padding: 2px;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+}
+
+.category-chip.favorites:not(.active):hover {
+  background: linear-gradient(90deg, #04214E 0%, #87CEEB 100%);
+  color: white;
+  opacity: 0.9;
+}
+
+.category-chip.favorites:not(.active):hover::before {
+  display: none;
+}
+
+.category-chip.favorites.active {
+  background: linear-gradient(90deg, #04214E 0%, #87CEEB 100%);
+  color: white;
+  opacity: 1;
+}
+
+.category-chip.favorites:not(.active) .category-count {
+  background: rgba(4, 33, 78, 0.1);
+  color: #04214E;
+}
+
+.category-chip.favorites .category-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+.category-chip.favorites.active .category-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
 }
 
 /* Content Area */
@@ -563,6 +741,50 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 14px;
+  position: relative;
+  padding-right: 32px;
+}
+
+.context-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.context-card:hover .context-actions {
+  opacity: 1;
+}
+
+.context-favorite-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--muted-foreground);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.context-favorite-btn:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.context-favorite-btn.favorited {
+  /* Color is handled by SVG gradient */
+}
+
+.context-favorite-btn.favorited:hover {
+  background: var(--muted);
+  color: var(--foreground);
 }
 
 .context-icon {
@@ -1581,6 +1803,13 @@ button:focus-visible {
   line-height: 1.4;
 }
 
+.section-title {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--foreground);
+}
+
 .subprofile-section-title {
   margin: 0 0 12px 0;
   font-size: 16px;
@@ -1850,7 +2079,7 @@ button:focus-visible {
   border-top: 1px solid var(--border);
 }
 
-/* Data Management Card Specific Styles */
+/* File Center Card Specific Styles */
 .data-management-card .settings-card-actions {
   border-top: none;
   padding-top: 0;
