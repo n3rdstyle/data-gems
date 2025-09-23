@@ -438,12 +438,17 @@ class QuizPage {
     // Enable undo button
     document.getElementById('undoBtn').disabled = false;
 
-    // Show success message
-    this.showSuccessMessage();
+    // Add visual feedback for selection
+    this.showSelectionFeedback(answer);
 
-    // Get next question
-    const nextQuestion = this.getNextQuestion();
-    this.displayQuestion(nextQuestion);
+    // Show success message after a delay
+    setTimeout(() => {
+      this.showSuccessMessage();
+
+      // Get next question
+      const nextQuestion = this.getNextQuestion();
+      this.displayQuestion(nextQuestion);
+    }, 500);
   }
 
   async addToProfile(preference) {
@@ -556,15 +561,34 @@ class QuizPage {
     }, 2000);
   }
 
-  exitQuiz() {
-    if (this.addedCount > 0) {
-      if (confirm(`You've added ${this.addedCount} preferences to your profile. Are you sure you want to exit?`)) {
-        window.close();
-      }
+  showSelectionFeedback(answer) {
+    const yesPanel = document.getElementById('yesChoice');
+    const noPanel = document.getElementById('noChoice');
+
+    // Add selected class to chosen panel and not-selected to the other
+    if (answer === 'yes') {
+      yesPanel.classList.add('selected');
+      noPanel.classList.add('not-selected');
     } else {
-      window.close();
+      noPanel.classList.add('selected');
+      yesPanel.classList.add('not-selected');
     }
+
+    // Reset after 500ms
+    setTimeout(() => {
+      yesPanel.classList.remove('selected', 'not-selected');
+      noPanel.classList.remove('selected', 'not-selected');
+      yesPanel.classList.add('reset');
+      noPanel.classList.add('reset');
+
+      // Remove reset class after transition
+      setTimeout(() => {
+        yesPanel.classList.remove('reset');
+        noPanel.classList.remove('reset');
+      }, 200);
+    }, 500);
   }
+
 
   setupEventListeners() {
     // Answer panels
@@ -595,10 +619,6 @@ class QuizPage {
       this.rateQuestion('down');
     });
 
-    // Exit button
-    document.getElementById('exitBtn').addEventListener('click', () => {
-      this.exitQuiz();
-    });
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
