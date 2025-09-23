@@ -81,6 +81,7 @@ function createInjectButton() {
   // Main button
   const button = document.createElement('button');
   button.className = 'prompt-profile-inject-btn';
+  button.style.borderRadius = '12px';
   button.innerHTML = `
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -125,7 +126,7 @@ function createInjectButton() {
         background: linear-gradient(135deg, #e84c88 0%, #f47b6a 25%, #f9a05c 50%, #fdb863 75%, #ffd194 100%);
         color: #04214E;
         border: none;
-        border-radius: 20px;
+        border-radius: 12px !important;
         font-size: 13px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         font-weight: 500;
@@ -135,11 +136,17 @@ function createInjectButton() {
         transition: all 0.2s ease;
         white-space: nowrap;
       }
-      
+
       .prompt-profile-inject-btn:hover {
-        transform: translateY(-1px);
         background: linear-gradient(135deg, #ec5a92 0%, #f58874 25%, #faae66 50%, #fdc46d 75%, #ffd89e 100%);
-        box-shadow: none !important;
+        box-shadow: 0 2px 8px rgba(232, 76, 136, 0.2);
+        border-radius: 12px !important;
+      }
+
+      /* Force 64px border-radius with highest specificity */
+      button.prompt-profile-inject-btn,
+      .prompt-profile-inject-btn {
+        border-radius: 12px !important;
       }
       
       .prompt-profile-inject-btn:active {
@@ -235,7 +242,7 @@ function createInjectButton() {
         position: fixed !important;
         background: white;
         border: 1px solid #e5e7eb;
-        border-radius: 8px;
+        border-radius: 12px;
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
         z-index: 999999 !important;
         min-width: 300px;
@@ -890,9 +897,19 @@ async function injectProfile(button, subprofileId = null) {
     let contextItems = [];
     let personalDescription = null;
     
-    // Get personal description from storage
-    const personalDescData = await chrome.storage.local.get(['personalDescription']);
-    personalDescription = personalDescData.personalDescription || null;
+    // Get personal description and basic info settings from storage
+    const storageData = await chrome.storage.local.get([
+      'personalDescription',
+      'includeBasicInfo',
+      'profileName',
+      'profileAge',
+      'profileGender',
+      'profileLocation',
+      'profileOccupation',
+      'profileLanguages',
+      'profileEducation'
+    ]);
+    personalDescription = storageData.personalDescription || null;
     
     if (subprofileId) {
       // Get subprofile data
@@ -936,6 +953,20 @@ async function injectProfile(button, subprofileId = null) {
       favorites: [],
       totalItems: contextItems.length
     };
+
+    // Add basic information if toggle is enabled (defaults to true)
+    const includeBasicInfo = storageData.includeBasicInfo !== undefined ? storageData.includeBasicInfo : true;
+    if (includeBasicInfo) {
+      profileData.basicInformation = {};
+
+      if (storageData.profileName) profileData.basicInformation.name = storageData.profileName;
+      if (storageData.profileAge) profileData.basicInformation.age = storageData.profileAge;
+      if (storageData.profileGender) profileData.basicInformation.gender = storageData.profileGender;
+      if (storageData.profileLocation) profileData.basicInformation.location = storageData.profileLocation;
+      if (storageData.profileOccupation) profileData.basicInformation.occupation = storageData.profileOccupation;
+      if (storageData.profileLanguages) profileData.basicInformation.languages = storageData.profileLanguages;
+      if (storageData.profileEducation) profileData.basicInformation.education = storageData.profileEducation;
+    }
 
     // Group items by category and collect favorites
     contextItems.forEach(item => {
@@ -1422,9 +1453,19 @@ async function performDirectInjection(inputElement, subprofileId = null) {
     let contextItems = [];
     let personalDescription = null;
     
-    // Get personal description from storage
-    const personalDescData = await chrome.storage.local.get(['personalDescription']);
-    personalDescription = personalDescData.personalDescription || null;
+    // Get personal description and basic info settings from storage
+    const storageData = await chrome.storage.local.get([
+      'personalDescription',
+      'includeBasicInfo',
+      'profileName',
+      'profileAge',
+      'profileGender',
+      'profileLocation',
+      'profileOccupation',
+      'profileLanguages',
+      'profileEducation'
+    ]);
+    personalDescription = storageData.personalDescription || null;
     
     if (subprofileId) {
       // Get subprofile data
@@ -1462,6 +1503,20 @@ async function performDirectInjection(inputElement, subprofileId = null) {
       favorites: [],
       totalItems: contextItems.length
     };
+
+    // Add basic information if toggle is enabled (defaults to true)
+    const includeBasicInfo = storageData.includeBasicInfo !== undefined ? storageData.includeBasicInfo : true;
+    if (includeBasicInfo) {
+      profileData.basicInformation = {};
+
+      if (storageData.profileName) profileData.basicInformation.name = storageData.profileName;
+      if (storageData.profileAge) profileData.basicInformation.age = storageData.profileAge;
+      if (storageData.profileGender) profileData.basicInformation.gender = storageData.profileGender;
+      if (storageData.profileLocation) profileData.basicInformation.location = storageData.profileLocation;
+      if (storageData.profileOccupation) profileData.basicInformation.occupation = storageData.profileOccupation;
+      if (storageData.profileLanguages) profileData.basicInformation.languages = storageData.profileLanguages;
+      if (storageData.profileEducation) profileData.basicInformation.education = storageData.profileEducation;
+    }
 
     // Group items by category and collect favorites
     contextItems.forEach(item => {

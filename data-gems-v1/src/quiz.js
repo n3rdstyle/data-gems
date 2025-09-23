@@ -1,30 +1,26 @@
-// Quiz Page JavaScript
-// Runs in the separate quiz webpage and communicates with the extension
+// Quick Quiz Feature
+// Manages the yes/no quiz interface for rapid preference collection
 
-class QuizPage {
+class QuickQuiz {
   constructor() {
     this.currentQuestion = null;
     this.history = [];
     this.addedCount = 0;
-    this.questionNumber = 0;
     this.answeredQuestions = new Set();
-    this.questionFeedback = {};
+    this.questionQueue = [];
+    this.questionFeedback = {}; // Track thumbs up/down per question
 
-    // Initialize questions (same as before but simplified)
+    // Load question feedback from storage
+    this.loadQuestionFeedback();
+
+    // Initialize question bank
     this.initializeQuestions();
-
-    // Load saved data
-    this.loadData();
 
     // Setup event listeners
     this.setupEventListeners();
-
-    // Start quiz
-    setTimeout(() => {
-      this.startQuiz();
-    }, 500);
   }
 
+  // Question Bank with templates and variations
   initializeQuestions() {
     this.questions = [
       // Food & Drink
@@ -32,6 +28,7 @@ class QuizPage {
         id: 'pizza',
         question: 'Do you enjoy eating pizza?',
         category: 'Food & Drink',
+        categoryIcon: '🍽️',
         yesAnswer: 'I enjoy eating pizza',
         noAnswer: "I don't enjoy pizza"
       },
@@ -39,6 +36,7 @@ class QuizPage {
         id: 'coffee',
         question: 'Do you drink coffee regularly?',
         category: 'Food & Drink',
+        categoryIcon: '🍽️',
         yesAnswer: 'I drink coffee regularly',
         noAnswer: "I don't drink coffee regularly"
       },
@@ -46,6 +44,7 @@ class QuizPage {
         id: 'cooking',
         question: 'Do you enjoy cooking at home?',
         category: 'Food & Drink',
+        categoryIcon: '🍽️',
         yesAnswer: 'I enjoy cooking at home',
         noAnswer: 'I prefer eating out or ordering food'
       },
@@ -53,6 +52,7 @@ class QuizPage {
         id: 'spicy-food',
         question: 'Do you like spicy food?',
         category: 'Food & Drink',
+        categoryIcon: '🍽️',
         yesAnswer: 'I enjoy spicy food',
         noAnswer: 'I prefer mild food'
       },
@@ -60,15 +60,9 @@ class QuizPage {
         id: 'vegetarian',
         question: 'Are you vegetarian or vegan?',
         category: 'Food & Drink',
+        categoryIcon: '🍽️',
         yesAnswer: 'I follow a vegetarian or vegan diet',
         noAnswer: 'I eat meat'
-      },
-      {
-        id: 'breakfast',
-        question: 'Do you eat breakfast every day?',
-        category: 'Food & Drink',
-        yesAnswer: 'I eat breakfast daily',
-        noAnswer: 'I often skip breakfast'
       },
 
       // Work & Professional
@@ -76,6 +70,7 @@ class QuizPage {
         id: 'remote-work',
         question: 'Do you prefer working from home?',
         category: 'Work & Professional',
+        categoryIcon: '💼',
         yesAnswer: 'I prefer working from home',
         noAnswer: 'I prefer working in an office'
       },
@@ -83,6 +78,7 @@ class QuizPage {
         id: 'morning-person',
         question: 'Are you a morning person?',
         category: 'Work & Professional',
+        categoryIcon: '💼',
         yesAnswer: "I'm a morning person",
         noAnswer: "I'm more productive later in the day"
       },
@@ -90,6 +86,7 @@ class QuizPage {
         id: 'team-work',
         question: 'Do you enjoy working in teams?',
         category: 'Work & Professional',
+        categoryIcon: '💼',
         yesAnswer: 'I enjoy collaborative team work',
         noAnswer: 'I prefer working independently'
       },
@@ -97,15 +94,9 @@ class QuizPage {
         id: 'meetings',
         question: 'Do you find meetings productive?',
         category: 'Work & Professional',
+        categoryIcon: '💼',
         yesAnswer: 'I find meetings productive and valuable',
         noAnswer: 'I prefer async communication over meetings'
-      },
-      {
-        id: 'multitasking',
-        question: 'Are you good at multitasking?',
-        category: 'Work & Professional',
-        yesAnswer: 'I can effectively multitask',
-        noAnswer: 'I prefer focusing on one task at a time'
       },
 
       // Hobbies
@@ -113,6 +104,7 @@ class QuizPage {
         id: 'reading',
         question: 'Do you enjoy reading books?',
         category: 'Hobbies',
+        categoryIcon: '🎯',
         yesAnswer: 'I enjoy reading books',
         noAnswer: "I don't read books often"
       },
@@ -120,6 +112,7 @@ class QuizPage {
         id: 'gaming',
         question: 'Do you play video games?',
         category: 'Hobbies',
+        categoryIcon: '🎯',
         yesAnswer: 'I enjoy playing video games',
         noAnswer: "I don't play video games"
       },
@@ -127,22 +120,17 @@ class QuizPage {
         id: 'sports',
         question: 'Do you play or watch sports?',
         category: 'Hobbies',
+        categoryIcon: '🎯',
         yesAnswer: 'I enjoy sports',
         noAnswer: "I'm not interested in sports"
       },
       {
-        id: 'gardening',
-        question: 'Do you enjoy gardening?',
-        category: 'Hobbies',
-        yesAnswer: 'I enjoy gardening',
-        noAnswer: "I don't have interest in gardening"
-      },
-      {
-        id: 'art',
-        question: 'Do you create or appreciate art?',
-        category: 'Hobbies',
-        yesAnswer: 'I enjoy creating or viewing art',
-        noAnswer: "I'm not particularly interested in art"
+        id: 'music-listener',
+        question: 'Do you listen to music daily?',
+        category: 'Entertainment & Media',
+        categoryIcon: '🎬',
+        yesAnswer: 'I listen to music daily',
+        noAnswer: 'I rarely listen to music'
       },
 
       // Travel & Activities
@@ -150,6 +138,7 @@ class QuizPage {
         id: 'travel',
         question: 'Do you enjoy traveling?',
         category: 'Travel & Activities',
+        categoryIcon: '✈️',
         yesAnswer: 'I love traveling and exploring new places',
         noAnswer: 'I prefer staying close to home'
       },
@@ -157,6 +146,7 @@ class QuizPage {
         id: 'beach-mountains',
         question: 'Do you prefer beaches over mountains?',
         category: 'Travel & Activities',
+        categoryIcon: '✈️',
         yesAnswer: 'I prefer beach vacations',
         noAnswer: 'I prefer mountain destinations'
       },
@@ -164,22 +154,9 @@ class QuizPage {
         id: 'outdoor-activities',
         question: 'Do you enjoy outdoor activities?',
         category: 'Travel & Activities',
+        categoryIcon: '✈️',
         yesAnswer: 'I enjoy outdoor activities and nature',
         noAnswer: 'I prefer indoor activities'
-      },
-      {
-        id: 'camping',
-        question: 'Do you enjoy camping?',
-        category: 'Travel & Activities',
-        yesAnswer: 'I enjoy camping and being in nature',
-        noAnswer: 'I prefer hotels and comfort'
-      },
-      {
-        id: 'adventure',
-        question: 'Are you adventurous?',
-        category: 'Travel & Activities',
-        yesAnswer: 'I love trying new and adventurous activities',
-        noAnswer: 'I prefer familiar and safe activities'
       },
 
       // Lifestyle & Preferences
@@ -187,6 +164,7 @@ class QuizPage {
         id: 'minimalist',
         question: 'Do you consider yourself a minimalist?',
         category: 'Lifestyle & Preferences',
+        categoryIcon: '💜',
         yesAnswer: 'I embrace minimalism',
         noAnswer: 'I like having many possessions'
       },
@@ -194,6 +172,7 @@ class QuizPage {
         id: 'pets',
         question: 'Do you have or want pets?',
         category: 'Lifestyle & Preferences',
+        categoryIcon: '💜',
         yesAnswer: 'I love having pets',
         noAnswer: "I prefer not to have pets"
       },
@@ -201,22 +180,17 @@ class QuizPage {
         id: 'exercise',
         question: 'Do you exercise regularly?',
         category: 'Lifestyle & Preferences',
+        categoryIcon: '💜',
         yesAnswer: 'I exercise regularly',
         noAnswer: "I don't exercise regularly"
       },
       {
-        id: 'organized',
-        question: 'Are you an organized person?',
-        category: 'Lifestyle & Preferences',
-        yesAnswer: "I'm very organized and tidy",
-        noAnswer: "I'm more relaxed about organization"
-      },
-      {
-        id: 'routine',
-        question: 'Do you prefer having a routine?',
-        category: 'Lifestyle & Preferences',
-        yesAnswer: 'I thrive with routine and structure',
-        noAnswer: 'I prefer flexibility and spontaneity'
+        id: 'social-media',
+        question: 'Are you active on social media?',
+        category: 'Technology & Communication',
+        categoryIcon: '📱',
+        yesAnswer: "I'm active on social media",
+        noAnswer: 'I avoid or rarely use social media'
       },
 
       // Entertainment & Media
@@ -224,6 +198,7 @@ class QuizPage {
         id: 'movies',
         question: 'Do you prefer movies over TV shows?',
         category: 'Entertainment & Media',
+        categoryIcon: '🎬',
         yesAnswer: 'I prefer watching movies',
         noAnswer: 'I prefer TV shows and series'
       },
@@ -231,6 +206,7 @@ class QuizPage {
         id: 'documentaries',
         question: 'Do you enjoy documentaries?',
         category: 'Entertainment & Media',
+        categoryIcon: '🎬',
         yesAnswer: 'I enjoy watching documentaries',
         noAnswer: 'I prefer fiction over documentaries'
       },
@@ -238,22 +214,9 @@ class QuizPage {
         id: 'podcasts',
         question: 'Do you listen to podcasts?',
         category: 'Entertainment & Media',
+        categoryIcon: '🎬',
         yesAnswer: 'I regularly listen to podcasts',
         noAnswer: "I don't listen to podcasts"
-      },
-      {
-        id: 'music-daily',
-        question: 'Do you listen to music daily?',
-        category: 'Entertainment & Media',
-        yesAnswer: 'I listen to music every day',
-        noAnswer: 'I rarely listen to music'
-      },
-      {
-        id: 'news',
-        question: 'Do you follow the news regularly?',
-        category: 'Entertainment & Media',
-        yesAnswer: 'I follow news and current events',
-        noAnswer: 'I avoid or rarely check the news'
       },
 
       // Social & Personal
@@ -261,6 +224,7 @@ class QuizPage {
         id: 'introvert',
         question: 'Do you consider yourself introverted?',
         category: 'Social & Personal',
+        categoryIcon: '👥',
         yesAnswer: "I'm more introverted",
         noAnswer: "I'm more extroverted"
       },
@@ -268,6 +232,7 @@ class QuizPage {
         id: 'large-gatherings',
         question: 'Do you enjoy large social gatherings?',
         category: 'Social & Personal',
+        categoryIcon: '👥',
         yesAnswer: 'I enjoy large social gatherings',
         noAnswer: 'I prefer small groups or one-on-one interactions'
       },
@@ -275,15 +240,9 @@ class QuizPage {
         id: 'spontaneous',
         question: 'Are you spontaneous or a planner?',
         category: 'Social & Personal',
+        categoryIcon: '👥',
         yesAnswer: "I'm spontaneous and flexible",
         noAnswer: 'I prefer planning things in advance'
-      },
-      {
-        id: 'public-speaking',
-        question: 'Are you comfortable with public speaking?',
-        category: 'Social & Personal',
-        yesAnswer: "I'm comfortable speaking in public",
-        noAnswer: 'I avoid public speaking when possible'
       },
 
       // Technology
@@ -291,80 +250,74 @@ class QuizPage {
         id: 'early-adopter',
         question: 'Are you an early adopter of new technology?',
         category: 'Technology & Communication',
+        categoryIcon: '📱',
         yesAnswer: 'I love trying new technology early',
         noAnswer: 'I wait until technology is proven'
-      },
-      {
-        id: 'social-media',
-        question: 'Are you active on social media?',
-        category: 'Technology & Communication',
-        yesAnswer: "I'm active on social media",
-        noAnswer: 'I avoid or rarely use social media'
       },
       {
         id: 'ai-tools',
         question: 'Do you use AI tools regularly?',
         category: 'Technology & Communication',
+        categoryIcon: '📱',
         yesAnswer: 'I regularly use AI tools',
         noAnswer: 'I rarely or never use AI tools'
-      },
-      {
-        id: 'privacy-conscious',
-        question: 'Are you privacy-conscious online?',
-        category: 'Technology & Communication',
-        yesAnswer: "I'm very careful about online privacy",
-        noAnswer: "I'm less concerned about online privacy"
       }
     ];
 
+    // Shuffle questions initially
     this.shuffleArray(this.questions);
   }
 
-  async loadData() {
+  // Load question feedback from storage
+  async loadQuestionFeedback() {
     try {
-      const result = await chrome.storage.local.get(['questionFeedback', 'quizHistory']);
+      const result = await chrome.storage.local.get(['questionFeedback']);
       this.questionFeedback = result.questionFeedback || {};
-
-      // Load any previous session data if needed
-      if (result.quizHistory) {
-        this.answeredQuestions = new Set(result.quizHistory || []);
-      }
     } catch (error) {
-      console.log('Running in standalone mode or storage not available');
+      console.error('Failed to load question feedback:', error);
+      this.questionFeedback = {};
     }
   }
 
-  startQuiz() {
-    // Hide loading, show content
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('quizContent').style.display = 'block';
-
-    // Get first question
-    const firstQuestion = this.getNextQuestion();
-    this.displayQuestion(firstQuestion);
+  // Save question feedback to storage
+  async saveQuestionFeedback() {
+    try {
+      await chrome.storage.local.set({ questionFeedback: this.questionFeedback });
+    } catch (error) {
+      console.error('Failed to save question feedback:', error);
+    }
   }
 
+  // Get next question
   getNextQuestion() {
+    // Filter out questions that have been answered or have too many thumbs down
     const availableQuestions = this.questions.filter(q => {
+      // Skip if already answered
       if (this.answeredQuestions.has(q.id)) return false;
-      const feedback = this.questionFeedback[q.id] || { down: 0 };
+
+      // Skip if too many thumbs down (3 or more)
+      const feedback = this.questionFeedback[q.id] || { up: 0, down: 0 };
       if (feedback.down >= 3) return false;
+
       return true;
     });
 
     if (availableQuestions.length === 0) {
+      // Reset if all questions have been answered
       this.answeredQuestions.clear();
       return this.getNextQuestion();
     }
 
-    // Balance categories
+    // Try to balance categories
     const categoryCounts = {};
     this.history.forEach(item => {
       categoryCounts[item.question.category] = (categoryCounts[item.question.category] || 0) + 1;
     });
 
+    // Find least represented category
     let leastUsedCategory = null;
     let minCount = Infinity;
+
     availableQuestions.forEach(q => {
       const count = categoryCounts[q.category] || 0;
       if (count < minCount) {
@@ -373,43 +326,49 @@ class QuizPage {
       }
     });
 
+    // Prefer questions from least used category
     const preferredQuestions = availableQuestions.filter(q => q.category === leastUsedCategory);
     const questionPool = preferredQuestions.length > 0 ? preferredQuestions : availableQuestions;
 
+    // Return random question from pool
     return questionPool[Math.floor(Math.random() * questionPool.length)];
   }
 
+  // Display question
   displayQuestion(question) {
     this.currentQuestion = question;
-    this.questionNumber++;
 
     // Update UI
-    document.getElementById('questionText').textContent = question.question;
-    document.getElementById('questionCategory').textContent = question.category;
+    document.getElementById('quizQuestion').textContent = question.question;
+    document.getElementById('quizCategory').textContent = `${question.categoryIcon} ${question.category}`;
 
-    // Update choice panels text based on question context
-    const yesText = this.getContextualText(question, 'yes');
-    const noText = this.getContextualText(question, 'no');
-
-    document.getElementById('yesText').textContent = yesText;
-    document.getElementById('noText').textContent = noText;
+    // Add animation
+    const container = document.querySelector('.quiz-question-container');
+    container.style.animation = 'none';
+    setTimeout(() => {
+      container.style.animation = 'slideIn 0.3s ease';
+    }, 10);
 
     // Reset feedback buttons
-    document.getElementById('thumbsUpBtn').classList.remove('active');
-    document.getElementById('thumbsDownBtn').classList.remove('active');
+    document.getElementById('quizThumbsUp').classList.remove('selected');
+    document.getElementById('quizThumbsDown').classList.remove('selected');
 
     // Show current feedback if exists
     const feedback = this.questionFeedback[question.id];
-    if (feedback?.userVote === 'up') {
-      document.getElementById('thumbsUpBtn').classList.add('active');
-    } else if (feedback?.userVote === 'down') {
-      document.getElementById('thumbsDownBtn').classList.add('active');
+    if (feedback) {
+      if (feedback.userVote === 'up') {
+        document.getElementById('quizThumbsUp').classList.add('selected');
+      } else if (feedback.userVote === 'down') {
+        document.getElementById('quizThumbsDown').classList.add('selected');
+      }
     }
   }
 
+  // Answer question
   async answerQuestion(answer) {
     if (!this.currentQuestion) return;
 
+    // Create preference item
     const preference = {
       id: Date.now().toString(),
       category: this.currentQuestion.category,
@@ -417,51 +376,95 @@ class QuizPage {
       answer: answer === 'yes' ? this.currentQuestion.yesAnswer : this.currentQuestion.noAnswer,
       source: 'quick-quiz',
       isFavorite: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
+    // Add to history for undo
     this.history.push({
       question: this.currentQuestion,
       answer: answer,
       preference: preference
     });
 
+    // Mark as answered
     this.answeredQuestions.add(this.currentQuestion.id);
 
-    // Save to extension storage
+    // Add to profile in real-time
     await this.addToProfile(preference);
 
+    // Update UI
     this.addedCount++;
     this.updateProgress();
 
     // Enable undo button
-    document.getElementById('undoBtn').disabled = false;
-
-    // Show success message
-    this.showSuccessMessage();
+    document.getElementById('quizUndoBtn').disabled = false;
 
     // Get next question
     const nextQuestion = this.getNextQuestion();
     this.displayQuestion(nextQuestion);
   }
 
+  // Skip question
+  skipQuestion() {
+    // Mark as answered (skipped)
+    if (this.currentQuestion) {
+      this.answeredQuestions.add(this.currentQuestion.id);
+    }
+
+    // Get next question
+    const nextQuestion = this.getNextQuestion();
+    this.displayQuestion(nextQuestion);
+  }
+
+  // Undo last answer
+  async undoLastAnswer() {
+    if (this.history.length === 0) return;
+
+    // Get last entry
+    const lastEntry = this.history.pop();
+
+    // Remove from answered questions
+    this.answeredQuestions.delete(lastEntry.question.id);
+
+    // Remove from profile
+    await this.removeFromProfile(lastEntry.preference.id);
+
+    // Update count
+    this.addedCount--;
+    this.updateProgress();
+
+    // Disable undo if no more history
+    if (this.history.length === 0) {
+      document.getElementById('quizUndoBtn').disabled = true;
+    }
+
+    // Display the question again
+    this.displayQuestion(lastEntry.question);
+  }
+
+  // Add preference to profile
   async addToProfile(preference) {
     try {
+      // Update the main popup's contextItems array directly if available
+      if (window.addContextItem) {
+        window.addContextItem(preference);
+      }
+
+      // Also save to storage for persistence
       const result = await chrome.storage.local.get(['contextItems']);
       const items = result.contextItems || [];
       items.unshift(preference); // Add to beginning of array
       await chrome.storage.local.set({ contextItems: items });
+
+      // Show brief success animation
+      this.showAddedAnimation();
     } catch (error) {
       console.error('Failed to add preference:', error);
-      // Store locally if extension storage not available
-      const stored = localStorage.getItem('tempPreferences') || '[]';
-      const temp = JSON.parse(stored);
-      temp.push(preference);
-      localStorage.setItem('tempPreferences', JSON.stringify(temp));
     }
   }
 
+  // Remove preference from profile
   async removeFromProfile(preferenceId) {
     try {
       const result = await chrome.storage.local.get(['contextItems']);
@@ -473,44 +476,20 @@ class QuizPage {
     }
   }
 
-  skipQuestion() {
-    if (this.currentQuestion) {
-      this.answeredQuestions.add(this.currentQuestion.id);
-    }
-    const nextQuestion = this.getNextQuestion();
-    this.displayQuestion(nextQuestion);
-  }
-
-  async undoLastAnswer() {
-    if (this.history.length === 0) return;
-
-    const lastEntry = this.history.pop();
-    this.answeredQuestions.delete(lastEntry.question.id);
-    await this.removeFromProfile(lastEntry.preference.id);
-
-    this.addedCount--;
-    this.updateProgress();
-
-    if (this.history.length === 0) {
-      document.getElementById('undoBtn').disabled = true;
-    }
-
-    this.displayQuestion(lastEntry.question);
-    this.questionNumber--;
-  }
-
+  // Rate question
   async rateQuestion(rating) {
     if (!this.currentQuestion) return;
 
     const questionId = this.currentQuestion.id;
 
+    // Initialize feedback if not exists
     if (!this.questionFeedback[questionId]) {
       this.questionFeedback[questionId] = { up: 0, down: 0, userVote: null };
     }
 
     const feedback = this.questionFeedback[questionId];
 
-    // Remove previous vote
+    // Remove previous vote if exists
     if (feedback.userVote === 'up') {
       feedback.up = Math.max(0, feedback.up - 1);
     } else if (feedback.userVote === 'down') {
@@ -521,101 +500,115 @@ class QuizPage {
     if (rating === 'up') {
       feedback.up++;
       feedback.userVote = 'up';
-      document.getElementById('thumbsUpBtn').classList.add('active');
-      document.getElementById('thumbsDownBtn').classList.remove('active');
+      document.getElementById('quizThumbsUp').classList.add('selected');
+      document.getElementById('quizThumbsDown').classList.remove('selected');
     } else if (rating === 'down') {
       feedback.down++;
       feedback.userVote = 'down';
-      document.getElementById('thumbsDownBtn').classList.add('active');
-      document.getElementById('thumbsUpBtn').classList.remove('active');
+      document.getElementById('quizThumbsDown').classList.add('selected');
+      document.getElementById('quizThumbsUp').classList.remove('selected');
     }
 
     // Save feedback
-    try {
-      await chrome.storage.local.set({ questionFeedback: this.questionFeedback });
-    } catch (error) {
-      console.log('Could not save feedback to extension storage');
-    }
+    await this.saveQuestionFeedback();
   }
 
+  // Update progress display
   updateProgress() {
-    document.getElementById('progressCount').textContent = this.addedCount;
+    document.getElementById('quizCounter').textContent = this.addedCount;
+
+    // Update progress bar (max 20 for visual)
+    const percentage = Math.min(100, (this.addedCount / 20) * 100);
+    document.getElementById('quizProgressFill').style.width = `${percentage}%`;
   }
 
-  showSuccessMessage() {
-    const existing = document.querySelector('.success-message');
-    if (existing) existing.remove();
-
-    const message = document.createElement('div');
-    message.className = 'success-message';
-    message.textContent = '✓ Preference added to your profile';
-    document.body.appendChild(message);
-
+  // Show added animation
+  showAddedAnimation() {
+    // Could add a toast notification or visual feedback
+    const progressText = document.querySelector('.progress-text');
+    progressText.style.color = '#10b981';
     setTimeout(() => {
-      message.remove();
-    }, 2000);
+      progressText.style.color = '#6b7280';
+    }, 500);
   }
 
-  exitQuiz() {
-    if (this.addedCount > 0) {
-      if (confirm(`You've added ${this.addedCount} preferences to your profile. Are you sure you want to exit?`)) {
-        window.close();
-      }
-    } else {
-      window.close();
-    }
-  }
-
+  // Setup event listeners
   setupEventListeners() {
-    // Answer panels
-    document.getElementById('yesChoice').addEventListener('click', () => {
+    // Yes/No buttons
+    document.getElementById('quizYesBtn')?.addEventListener('click', () => {
       this.answerQuestion('yes');
     });
 
-    document.getElementById('noChoice').addEventListener('click', () => {
+    document.getElementById('quizNoBtn')?.addEventListener('click', () => {
       this.answerQuestion('no');
     });
 
     // Skip button
-    document.getElementById('skipBtn').addEventListener('click', () => {
+    document.getElementById('quizSkipBtn')?.addEventListener('click', () => {
       this.skipQuestion();
     });
 
     // Undo button
-    document.getElementById('undoBtn').addEventListener('click', () => {
+    document.getElementById('quizUndoBtn')?.addEventListener('click', () => {
       this.undoLastAnswer();
     });
 
     // Feedback buttons
-    document.getElementById('thumbsUpBtn').addEventListener('click', () => {
+    document.getElementById('quizThumbsUp')?.addEventListener('click', () => {
       this.rateQuestion('up');
     });
 
-    document.getElementById('thumbsDownBtn').addEventListener('click', () => {
+    document.getElementById('quizThumbsDown')?.addEventListener('click', () => {
       this.rateQuestion('down');
     });
 
     // Exit button
-    document.getElementById('exitBtn').addEventListener('click', () => {
+    document.getElementById('quizExitBtn')?.addEventListener('click', () => {
       this.exitQuiz();
     });
 
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'y' || e.key === 'Y' || e.key === 'ArrowLeft') {
-        this.answerQuestion('yes');
-      } else if (e.key === 'n' || e.key === 'N' || e.key === 'ArrowRight') {
-        this.answerQuestion('no');
-      } else if (e.key === 's' || e.key === 'S') {
-        this.skipQuestion();
-      } else if (e.key === 'z' || e.key === 'Z') {
-        if (e.metaKey || e.ctrlKey) {
-          this.undoLastAnswer();
-        }
+    // Back button (currently same as undo)
+    document.getElementById('quizBackBtn')?.addEventListener('click', () => {
+      if (this.history.length > 0) {
+        this.undoLastAnswer();
+      } else {
+        this.exitQuiz();
       }
     });
   }
 
+  // Start quiz
+  startQuiz() {
+    // Reset state
+    this.history = [];
+    this.addedCount = 0;
+
+    // Show quiz page
+    document.getElementById('quickQuizPage').style.display = 'flex';
+    document.querySelector('.container').style.display = 'none';
+
+    // Display first question
+    const firstQuestion = this.getNextQuestion();
+    this.displayQuestion(firstQuestion);
+
+    // Update progress
+    this.updateProgress();
+  }
+
+  // Exit quiz
+  exitQuiz() {
+    // Hide quiz page
+    document.getElementById('quickQuizPage').style.display = 'none';
+    document.querySelector('.container').style.display = 'flex';
+
+    // Since we've been updating the main array directly, just refresh the UI
+    if (window.filterItems && window.updateUI) {
+      window.filterItems();
+      window.updateUI();
+    }
+  }
+
+  // Utility: Shuffle array
   shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -623,40 +616,7 @@ class QuizPage {
     }
     return array;
   }
-
-  getContextualText(question, choice) {
-    // Generate contextual text for the choice panels based on the question
-    const questionText = question.question.toLowerCase();
-
-    if (choice === 'yes') {
-      if (questionText.includes('do you enjoy') || questionText.includes('do you like')) {
-        return 'Yes, I do';
-      } else if (questionText.includes('are you')) {
-        return 'Yes, I am';
-      } else if (questionText.includes('do you prefer')) {
-        return 'Yes';
-      } else if (questionText.includes('do you have') || questionText.includes('do you want')) {
-        return 'Yes, I do';
-      } else {
-        return 'Yes';
-      }
-    } else {
-      if (questionText.includes('do you enjoy') || questionText.includes('do you like')) {
-        return "No, I don't";
-      } else if (questionText.includes('are you')) {
-        return "No, I'm not";
-      } else if (questionText.includes('do you prefer')) {
-        return 'No';
-      } else if (questionText.includes('do you have') || questionText.includes('do you want')) {
-        return "No, I don't";
-      } else {
-        return 'No';
-      }
-    }
-  }
 }
 
-// Start the quiz when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-  new QuizPage();
-});
+// Export for use in popup.js
+window.QuickQuiz = QuickQuiz;

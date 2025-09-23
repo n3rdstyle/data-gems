@@ -131,10 +131,56 @@
           </div>
           <div class="form-group">
             <label class="form-label">Topic</label>
-            <input type="text" id="questionInput" class="form-input" placeholder="e.g., Favorite type of music">
+            <div class="topic-input-container">
+              <input type="text" id="questionInput" class="form-input topic-input" placeholder="Type your own topic or select from dropdown">
+              <div class="topic-dropdown-container">
+                <button type="button" class="topic-dropdown-btn" id="topicDropdownBtn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6,9 12,15 18,9"></polyline>
+                  </svg>
+                </button>
+                <div class="topic-dropdown-menu" id="topicDropdownMenu">
+                  <div class="dropdown-section">
+                    <h4>Lifestyle & Preferences</h4>
+                    <button type="button" class="dropdown-option">What is your favorite food?</button>
+                    <button type="button" class="dropdown-option">What is your ideal morning routine?</button>
+                    <button type="button" class="dropdown-option">How do you prefer to relax after work?</button>
+                    <button type="button" class="dropdown-option">What is your favorite season and why?</button>
+                  </div>
+                  <div class="dropdown-section">
+                    <h4>Social & Communication</h4>
+                    <button type="button" class="dropdown-option">How do you prefer to communicate (text, call, in-person)?</button>
+                    <button type="button" class="dropdown-option">What is your ideal weekend with friends?</button>
+                    <button type="button" class="dropdown-option">How do you celebrate special occasions?</button>
+                    <button type="button" class="dropdown-option">What makes you feel most connected to others?</button>
+                  </div>
+                  <div class="dropdown-section">
+                    <h4>Work & Productivity</h4>
+                    <button type="button" class="dropdown-option">What time of day are you most productive?</button>
+                    <button type="button" class="dropdown-option">How do you handle stress or pressure?</button>
+                    <button type="button" class="dropdown-option">What motivates you to do your best work?</button>
+                    <button type="button" class="dropdown-option">Do you prefer working alone or in a team?</button>
+                  </div>
+                  <div class="dropdown-section">
+                    <h4>Entertainment & Hobbies</h4>
+                    <button type="button" class="dropdown-option">What type of music energizes you?</button>
+                    <button type="button" class="dropdown-option">What is your favorite way to spend a Sunday?</button>
+                    <button type="button" class="dropdown-option">What hobbies bring you the most joy?</button>
+                    <button type="button" class="dropdown-option">What is your go-to comfort movie or show?</button>
+                  </div>
+                  <div class="dropdown-section">
+                    <h4>Personal Growth</h4>
+                    <button type="button" class="dropdown-option">What is one skill you'd love to learn?</button>
+                    <button type="button" class="dropdown-option">How do you prefer to learn new things?</button>
+                    <button type="button" class="dropdown-option">What is your biggest pet peeve?</button>
+                    <button type="button" class="dropdown-option">What quality do you value most in relationships?</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Details</label>
+            <label class="form-label">Preference</label>
             <textarea id="answerInput" class="form-textarea" placeholder="e.g., I love jazz and classical music, especially Miles Davis and Bach"></textarea>
           </div>
           <div class="form-actions">
@@ -162,19 +208,15 @@
             <p id="emptyDescription" class="empty-description">Add personal context to help AI assistants understand you better. Your data stays private and local.</p>
           </div>
           <div class="button-group">
-            <button id="firstAddBtn" class="button button-gradient">
+            <button id="firstAddBtn" class="button highlight-button-1">
               <svg class="icon" viewBox="0 0 24 24">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-              Add new preference
+              Add new Preference
             </button>
-            <button id="quickQuizBtn" class="button button-outline-gradient">
-              <svg class="icon" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" fill="none" stroke-width="2"/>
-                <path d="M12 7v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-              Quick Quiz
+            <button id="quickQuizBtn" class="button button-quiz">
+              Try the Quiz
             </button>
           </div>
         </div>
@@ -188,19 +230,15 @@
       <!-- Footer Add Button (hidden by default) -->
       <div id="footer" class="footer" style="display: none;">
         <div class="button-group footer-buttons">
-          <button id="addBtn" class="button button-gradient">
+          <button id="addBtn" class="button highlight-button-1">
             <svg class="icon" viewBox="0 0 24 24">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            Add new preference
+            Add new Preference
           </button>
-          <button id="footerQuizBtn" class="button button-outline-gradient">
-            <svg class="icon" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" fill="none" stroke-width="2"/>
-              <path d="M12 7v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            Quick Quiz
+          <button id="footerQuizBtn" class="button button-quiz">
+            Try the Quiz
           </button>
         </div>
       </div>
@@ -245,6 +283,56 @@
               </div>
             </div>
           </div>
+
+          <!-- Basic Information Section -->
+          <div class="basic-info-section">
+            <div class="section-header">
+              <h3>Basic Information</h3>
+              <div class="toggle-container">
+                <label class="toggle-style" data-tooltip="Inject in profile">
+                  <input type="checkbox" id="includeBasicInfoToggle" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="profile-form-grid">
+              <div class="profile-form-group full-width">
+                <label for="profileNameBasic" class="profile-form-label">Name</label>
+                <input type="text" id="profileNameBasic" class="profile-form-input" placeholder="e.g., Dennis Breuer">
+              </div>
+              <div class="profile-form-group">
+                <label for="profileAge" class="profile-form-label">Age</label>
+                <input type="number" id="profileAge" class="profile-form-input" placeholder="e.g., 28" min="1" max="150">
+              </div>
+              <div class="profile-form-group">
+                <label for="profileGender" class="profile-form-label">Gender</label>
+                <select id="profileGender" class="profile-form-select">
+                  <option value="">Prefer not to say</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="non-binary">Non-binary</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="profile-form-group">
+                <label for="profileLocation" class="profile-form-label">Location</label>
+                <input type="text" id="profileLocation" class="profile-form-input" placeholder="e.g., San Francisco, CA">
+              </div>
+              <div class="profile-form-group">
+                <label for="profileOccupation" class="profile-form-label">Occupation</label>
+                <input type="text" id="profileOccupation" class="profile-form-input" placeholder="e.g., Software Engineer">
+              </div>
+              <div class="profile-form-group full-width">
+                <label for="profileLanguages" class="profile-form-label">Languages</label>
+                <input type="text" id="profileLanguages" class="profile-form-input" placeholder="e.g., English, Spanish, French">
+              </div>
+              <div class="profile-form-group full-width">
+                <label for="profileEducation" class="profile-form-label">Education</label>
+                <input type="text" id="profileEducation" class="profile-form-input" placeholder="e.g., BS Computer Science, MIT">
+              </div>
+            </div>
+          </div>
+
           <div class="description-section">
             <h3>Personal Description</h3>
             <textarea id="personalDescription" class="personal-description-textarea" placeholder="Describe yourself here ..."></textarea>
@@ -270,17 +358,17 @@
             <div class="form-group">
               <label for="editCategory" class="form-label">Category:</label>
               <select id="editCategory" class="form-select" required>
-                <option value="Hobbies">🎯 Hobbies</option>
-                <option value="Food & Drink">🍽️ Food & Drink</option>
-                <option value="Entertainment & Media">🎬 Entertainment & Media</option>
-                <option value="Travel & Activities">✈️ Travel & Activities</option>
-                <option value="Lifestyle & Preferences">💜 Lifestyle & Preferences</option>
-                <option value="Work & Professional">💼 Work & Professional</option>
-                <option value="Technology & Communication">📱 Technology & Communication</option>
-                <option value="Transportation">🚗 Transportation</option>
-                <option value="Social & Personal">👥 Social & Personal</option>
-                <option value="Weather & Environment">☀️ Weather & Environment</option>
-                <option value="Other">📝 Other</option>
+                <option value="Hobbies">Hobbies</option>
+                <option value="Food & Drink">Food & Drink</option>
+                <option value="Entertainment & Media">Entertainment & Media</option>
+                <option value="Travel & Activities">Travel & Activities</option>
+                <option value="Lifestyle & Preferences">Lifestyle & Preferences</option>
+                <option value="Work & Professional">Work & Professional</option>
+                <option value="Technology & Communication">Technology & Communication</option>
+                <option value="Transportation">Transportation</option>
+                <option value="Social & Personal">Social & Personal</option>
+                <option value="Weather & Environment">Weather & Environment</option>
+                <option value="Other">Other</option>
               </select>
             </div>
             <div class="form-group" id="customCategoryGroup" style="display: none;">
@@ -289,10 +377,56 @@
             </div>
             <div class="form-group">
               <label for="editQuestion" class="form-label">Topic:</label>
-              <input type="text" id="editQuestion" class="form-input" placeholder="e.g., Favorite type of music" required>
+              <div class="topic-input-wrapper">
+                <input type="text" id="editQuestion" class="form-input" placeholder="e.g., Favorite type of music" required>
+                <div class="topic-dropdown-container" id="editDropdownContainer" style="display: none;">
+                  <button type="button" class="topic-dropdown-btn" id="editTopicDropdownBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6,9 12,15 18,9"></polyline>
+                    </svg>
+                  </button>
+                  <div class="topic-dropdown-menu" id="editTopicDropdownMenu">
+                    <div class="dropdown-section">
+                      <h4>Lifestyle & Preferences</h4>
+                      <button type="button" class="dropdown-option">What is your favorite food?</button>
+                      <button type="button" class="dropdown-option">What is your ideal morning routine?</button>
+                      <button type="button" class="dropdown-option">How do you prefer to relax after work?</button>
+                      <button type="button" class="dropdown-option">What is your favorite season and why?</button>
+                    </div>
+                    <div class="dropdown-section">
+                      <h4>Social & Communication</h4>
+                      <button type="button" class="dropdown-option">How do you prefer to communicate (text, call, in-person)?</button>
+                      <button type="button" class="dropdown-option">What is your ideal weekend with friends?</button>
+                      <button type="button" class="dropdown-option">How do you celebrate special occasions?</button>
+                      <button type="button" class="dropdown-option">What makes you feel most connected to others?</button>
+                    </div>
+                    <div class="dropdown-section">
+                      <h4>Work & Productivity</h4>
+                      <button type="button" class="dropdown-option">What time of day are you most productive?</button>
+                      <button type="button" class="dropdown-option">How do you handle stress or pressure?</button>
+                      <button type="button" class="dropdown-option">What motivates you to do your best work?</button>
+                      <button type="button" class="dropdown-option">Do you prefer working alone or in a team?</button>
+                    </div>
+                    <div class="dropdown-section">
+                      <h4>Entertainment & Hobbies</h4>
+                      <button type="button" class="dropdown-option">What type of music energizes you?</button>
+                      <button type="button" class="dropdown-option">What is your favorite way to spend a Sunday?</button>
+                      <button type="button" class="dropdown-option">What hobbies bring you the most joy?</button>
+                      <button type="button" class="dropdown-option">What is your go-to comfort movie or show?</button>
+                    </div>
+                    <div class="dropdown-section">
+                      <h4>Personal Growth</h4>
+                      <button type="button" class="dropdown-option">What is one skill you'd love to learn?</button>
+                      <button type="button" class="dropdown-option">How do you prefer to learn new things?</button>
+                      <button type="button" class="dropdown-option">What is your biggest pet peeve?</button>
+                      <button type="button" class="dropdown-option">What quality do you value most in relationships?</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="form-group">
-              <label for="editAnswer" class="form-label">Details:</label>
+              <label for="editAnswer" class="form-label">Preference:</label>
               <textarea id="editAnswer" class="form-textarea" rows="3" placeholder="e.g., I love jazz and classical music, especially Miles Davis and Bach" required></textarea>
             </div>
           </form>
@@ -484,7 +618,7 @@
                 <h3>Auto-Injection</h3>
               </div>
               <div class="beta-feature-toggle">
-                <label class="toggle-switch">
+                <label class="toggle-style">
                   <input type="checkbox" id="betaAutoInjectToggle">
                   <span class="toggle-slider"></span>
                 </label>

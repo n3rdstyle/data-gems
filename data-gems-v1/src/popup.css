@@ -14,8 +14,8 @@
   --foreground: #021127;
   --card: #FFFFFF;
   --card-foreground: #021127;
-  --primary: #FF5A5F;
-  --primary-hover: #E00007;
+  --primary: #EC6F95;
+  --primary-hover: #e84c88;
   --primary-foreground: #FFFCF6;
   --secondary: #F7F7F7;
   --secondary-foreground: #021127;
@@ -125,7 +125,7 @@ body {
 }
 
 .profile-avatar:hover {
-  transform: scale(1.05);
+  /* Scale removed for consistent UX */
 }
 
 .avatar-letter {
@@ -219,7 +219,7 @@ body {
 }
 
 .icon-button:active {
-  transform: scale(0.95);
+  /* Scale removed for consistent UX */
 }
 
 /* Search Input - Airbnb Style */
@@ -279,11 +279,11 @@ body {
 
 .subprofile-create-btn:hover {
   background: var(--primary-hover);
-  transform: scale(1.05);
+  /* Scale removed for consistent UX */
 }
 
 .subprofile-create-btn:active {
-  transform: scale(0.95);
+  /* Scale removed for consistent UX */
 }
 
 .subprofile-edit-btn,
@@ -309,7 +309,7 @@ body {
   background: var(--accent);
   color: var(--accent-foreground);
   border-color: var(--accent);
-  transform: scale(1.05);
+  /* Scale removed for consistent UX */
   box-shadow: var(--shadow-hover);
 }
 
@@ -323,13 +323,13 @@ body {
   background: var(--destructive);
   color: var(--destructive-foreground);
   border-color: var(--destructive);
-  transform: scale(1.05);
+  /* Scale removed for consistent UX */
   box-shadow: var(--shadow-hover);
 }
 
 .subprofile-edit-btn:active,
 .subprofile-delete-btn:active {
-  transform: scale(0.95);
+  /* Scale removed for consistent UX */
 }
 
 /* Icon styling within the buttons */
@@ -984,6 +984,123 @@ body {
   font-family: var(--font-family);
 }
 
+/* Topic Input Dropdown Styles */
+.topic-input-container,
+.topic-input-wrapper {
+  position: relative;
+  overflow: visible;
+}
+
+.topic-input-wrapper input {
+  width: 100%;
+}
+
+.topic-input-wrapper .topic-dropdown-container {
+  position: static;
+}
+
+.topic-input {
+  width: 100%;
+  padding-right: 40px !important; /* Make room for dropdown button */
+}
+
+.topic-dropdown-container {
+  position: static;
+}
+
+.topic-dropdown-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  transition: all 0.2s ease;
+}
+
+.topic-dropdown-btn:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.topic-dropdown-btn.active {
+  color: var(--primary);
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.topic-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 10000;
+  display: none;
+}
+
+/* Specific positioning for edit modal dropdown */
+.topic-input-wrapper .topic-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 10001;
+}
+
+.topic-dropdown-menu.show {
+  display: block;
+}
+
+.dropdown-section {
+  padding: 12px 0;
+}
+
+.dropdown-section:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+
+.dropdown-section h4 {
+  font-size: 12px;
+  font-weight: var(--font-weight-bold);
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 8px 0;
+  padding: 0 16px;
+}
+
+.dropdown-option {
+  width: 100%;
+  text-align: left;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-option:hover {
+  background: var(--muted);
+}
+
+.dropdown-option:active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
 .form-actions {
   display: flex;
   gap: 12px;
@@ -1009,12 +1126,13 @@ body {
 }
 
 .button:active {
-  transform: scale(0.98);
+  /* Scale removed for consistent UX */
 }
 
 .button-primary {
   background: var(--primary);
   color: var(--primary-foreground);
+  border-radius: 12px;
 }
 
 .button-primary:hover {
@@ -1032,11 +1150,52 @@ body {
 
 .button-gradient:hover {
   background: linear-gradient(90deg, #fdc46d 0%, #f58874 100%);
-  transform: translateY(-1px);
+  /* Transform removed for consistent UX */
 }
 
 .button-gradient:active {
-  transform: scale(0.98) translateY(0);
+  /* Transform removed for consistent UX */
+}
+
+/* Highlight Button Style 1 - Warm Gradient */
+.highlight-button-1 {
+  background: linear-gradient(90deg, #FDB171 0%, #EC6F95 100%);
+  color: #021127;
+  transition: all 0.3s ease;
+  font-weight: var(--font-weight-medium);
+  border-radius: 12px;
+  border: none;
+}
+
+.highlight-button-1:hover {
+  background: linear-gradient(90deg, #fdc46d 0%, #f58874 100%);
+  /* Transform removed for consistent UX */
+}
+
+.highlight-button-1:active {
+  /* Transform removed for consistent UX */
+}
+
+/* Highlight Button Style 2 - Rainbow Gradient */
+.highlight-button-2 {
+  background: linear-gradient(135deg, #e84c88 0%, #f47b6a 25%, #f9a05c 50%, #fdb863 75%, #ffd194 100%);
+  color: #04214E;
+  border: none;
+  border-radius: 64px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.highlight-button-2:hover {
+  background: linear-gradient(135deg, #ec5a92 0%, #f58874 25%, #faae66 50%, #fdc46d 75%, #ffd89e 100%);
+  box-shadow: 0 2px 8px rgba(232, 76, 136, 0.2);
+  /* Transform removed for consistent UX */
+}
+
+.highlight-button-2:active {
+  background: linear-gradient(135deg, #ec5a92 0%, #f58874 25%, #faae66 50%, #fdc46d 75%, #ffd89e 100%);
+  box-shadow: 0 1px 4px rgba(232, 76, 136, 0.3);
 }
 
 .button-outline {
@@ -1053,6 +1212,7 @@ body {
   background: var(--secondary);
   color: var(--muted-foreground);
   border: 1px solid var(--border) !important;
+  border-radius: 12px;
 }
 
 .button-secondary:hover {
@@ -1178,8 +1338,9 @@ button:focus-visible {
 .modal-content {
   background: var(--background);
   border-radius: var(--radius-large);
-  width: 340px;
-  max-height: 500px;
+  width: 600px;
+  max-width: 95vw;
+  max-height: 600px;
   overflow: hidden;
   animation: slideUp 0.3s ease;
   border: 1px solid var(--border);
@@ -1221,9 +1382,22 @@ button:focus-visible {
 }
 
 .modal-body {
-  padding: 20px;
-  max-height: 400px;
+  padding: 16px;
+  max-height: 500px;
   overflow-y: auto;
+  overflow-x: visible;
+}
+
+/* Allow dropdown to overflow modal body */
+.modal-body .topic-input-container,
+.modal-body .topic-input-wrapper {
+  position: relative;
+  overflow: visible !important;
+}
+
+/* Ensure form doesn't clip dropdown */
+#editItemForm {
+  overflow: visible !important;
 }
 
 .profile-image-section {
@@ -1284,6 +1458,102 @@ button:focus-visible {
   color: var(--muted-foreground);
   line-height: 1.5;
   margin: 0 0 16px 0;
+}
+
+.basic-info-section {
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.basic-info-section h3 {
+  font-size: 16px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--foreground);
+  margin: 0;
+}
+.toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Special positioning for basic info toggle tooltip to prevent right-side cutoff */
+.toggle-container .toggle-style[data-tooltip]::after {
+  left: auto;
+  right: 0;
+  transform: translateX(0) scale(0.9);
+}
+.toggle-container .toggle-style[data-tooltip]:hover::after {
+  transform: translateX(0) scale(1);
+}
+
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 600px) {
+  .profile-form-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+}
+
+.profile-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.profile-form-label {
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+  margin-bottom: 6px;
+}
+
+.profile-form-input,
+.profile-form-select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  font-size: 14px;
+  font-family: var(--font-family);
+  background: var(--background);
+  color: var(--foreground);
+  transition: all 0.2s ease;
+}
+
+.profile-form-input:focus,
+.profile-form-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(4, 33, 78, 0.1);
+}
+
+.profile-form-input::placeholder {
+  color: var(--muted-foreground);
+}
+
+.profile-form-select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6,9 12,15 18,9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 
 .description-section {
@@ -1941,7 +2211,8 @@ button:focus-visible {
 
 /* Settings Modal Styles - Redesigned */
 .settings-modal {
-  max-width: 480px;
+  max-width: 600px;
+  width: 95vw;
 }
 
 .settings-header-content {
@@ -2423,7 +2694,6 @@ button:focus-visible {
   background-color: white;
   border-radius: 50%;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .toggle-switch input:checked + .toggle-slider {
@@ -2440,6 +2710,52 @@ button:focus-visible {
 
 .toggle-switch input:focus + .toggle-slider {
   box-shadow: 0 0 0 2px rgba(255, 90, 95, 0.2);
+}
+
+/* Unified Toggle Style */
+.toggle-style {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+}
+
+.toggle-style input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-style .toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  border-radius: 24px;
+  transition: all 0.3s ease;
+}
+
+.toggle-style .toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.toggle-style input:checked + .toggle-slider {
+  background-color: var(--primary);
+}
+
+.toggle-style input:checked + .toggle-slider:before {
+  transform: translateX(24px);
 }
 
 /* ============================================
@@ -2965,7 +3281,39 @@ button:focus-visible {
 .button-outline-gradient:hover {
   background: linear-gradient(135deg, #e84c88 0%, #f47b6a 25%, #f9a05c 50%, #fdb863 75%, #ffd194 100%);
   color: #04214E;
-  transform: translateY(-1px);
+  /* Transform removed for consistent UX */
+}
+
+/* Quiz Button Styles - Primary Button Style */
+.button-quiz {
+  width: fit-content !important;
+  height: 40px !important;
+  padding: 0 16px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: var(--radius-small);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  flex: none !important;  /* Prevent any flexing */
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.button-quiz:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 2px 8px rgba(4, 33, 78, 0.2);
+  transition: all 0.2s ease;
+}
+
+.button-quiz:active {
+  background: var(--primary-hover);
+  box-shadow: 0 1px 4px rgba(4, 33, 78, 0.3);
 }
 
 /* Quiz Page Styles */
@@ -3187,7 +3535,7 @@ button:focus-visible {
 }
 
 .feedback-btn:hover {
-  transform: scale(1.1);
+  /* Scale removed for consistent UX */
 }
 
 .thumbs-up:hover {
@@ -3203,7 +3551,7 @@ button:focus-visible {
 }
 
 .feedback-btn.selected {
-  transform: scale(1.1);
+  /* Scale removed for consistent UX */
 }
 
 .thumbs-up.selected {

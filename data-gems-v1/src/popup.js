@@ -143,6 +143,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadProfileImage(); // Load profile image after DOM is ready
   loadPersonalDescription(); // Load personal description after DOM is ready
   loadProfileName(); // Load profile name after DOM is ready
+  loadBasicInfoToggle(); // Load basic info toggle after DOM is ready
+  loadProfileAge(); // Load profile age after DOM is ready
+  loadProfileGender(); // Load profile gender after DOM is ready
+  loadProfileLocation(); // Load profile location after DOM is ready
+  loadProfileOccupation(); // Load profile occupation after DOM is ready
+  loadProfileLanguages(); // Load profile languages after DOM is ready
+  loadProfileEducation(); // Load profile education after DOM is ready
 });
 
 // Load items from chrome.storage
@@ -152,8 +159,8 @@ async function loadItems() {
       if (result.contextItems) {
         contextItems = result.contextItems.map(item => ({
           ...item,
-          createdAt: new Date(item.createdAt),
-          updatedAt: new Date(item.updatedAt)
+          createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+          updatedAt: item.updatedAt ? new Date(item.updatedAt) : new Date()
         }));
         
         // Remove duplicates from existing data
@@ -174,6 +181,7 @@ async function loadItems() {
           saveItems();
           console.log(`Removed ${result.contextItems.length - uniqueItems.length} duplicate items`);
         }
+
       } else {
         contextItems = [];
       }
@@ -247,7 +255,8 @@ function filterItems() {
       item.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.category.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
-  }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort by creation date, newest first
+  }); // No sorting - items maintain their array order (newest first via unshift)
+
 }
 
 // Update UI based on state
@@ -407,7 +416,7 @@ function createCategoryChip(value, label, count) {
 // Render context items
 function renderItems() {
   elements.itemsList.innerHTML = '';
-  
+
   filteredItems.forEach(item => {
     const card = createContextCard(item);
     elements.itemsList.appendChild(card);
@@ -618,7 +627,7 @@ function handleSubmit(e) {
       createdAt: now,
       updatedAt: now
     };
-    contextItems.unshift(newItem);
+    contextItems.unshift(newItem); // Add to beginning of array
     showNotification('Context added successfully!');
   }
   
@@ -948,7 +957,39 @@ function setupEventListeners() {
   elements.privacyLink.addEventListener('click', openPrivacyStatement);
   elements.profileName.addEventListener('input', handleProfileNameChange);
   elements.profileName.addEventListener('blur', handleProfileNameBlur);
-  
+
+  // Basic information field event listeners
+  if (document.getElementById('includeBasicInfoToggle')) {
+    document.getElementById('includeBasicInfoToggle').addEventListener('change', handleBasicInfoToggleChange);
+  }
+  if (document.getElementById('profileNameBasic')) {
+    document.getElementById('profileNameBasic').addEventListener('input', handleProfileNameBasicChange);
+    document.getElementById('profileNameBasic').addEventListener('blur', handleProfileNameBasicBlur);
+  }
+  if (document.getElementById('profileAge')) {
+    document.getElementById('profileAge').addEventListener('input', handleProfileAgeChange);
+    document.getElementById('profileAge').addEventListener('blur', handleProfileAgeBlur);
+  }
+  if (document.getElementById('profileGender')) {
+    document.getElementById('profileGender').addEventListener('change', handleProfileGenderChange);
+  }
+  if (document.getElementById('profileLocation')) {
+    document.getElementById('profileLocation').addEventListener('input', handleProfileLocationChange);
+    document.getElementById('profileLocation').addEventListener('blur', handleProfileLocationBlur);
+  }
+  if (document.getElementById('profileOccupation')) {
+    document.getElementById('profileOccupation').addEventListener('input', handleProfileOccupationChange);
+    document.getElementById('profileOccupation').addEventListener('blur', handleProfileOccupationBlur);
+  }
+  if (document.getElementById('profileLanguages')) {
+    document.getElementById('profileLanguages').addEventListener('input', handleProfileLanguagesChange);
+    document.getElementById('profileLanguages').addEventListener('blur', handleProfileLanguagesBlur);
+  }
+  if (document.getElementById('profileEducation')) {
+    document.getElementById('profileEducation').addEventListener('input', handleProfileEducationChange);
+    document.getElementById('profileEducation').addEventListener('blur', handleProfileEducationBlur);
+  }
+
   // Close modal on outside click
   elements.profileModal.addEventListener('click', (e) => {
     if (e.target === elements.profileModal) {
@@ -1035,7 +1076,10 @@ function setupEventListeners() {
     }
     updateUI();
   });
-  
+
+  // Topic dropdown functionality
+  setupTopicDropdown();
+
   // Category selection handlers
   if (elements.categorySelect) {
     elements.categorySelect.addEventListener('change', handleMainCategoryChange);
@@ -1122,6 +1166,80 @@ function generateId() {
   return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
+// Topic dropdown functionality
+function setupTopicDropdown() {
+  // Setup for both main form and edit modal
+  setupDropdownForElement('topicDropdownBtn', 'topicDropdownMenu', 'questionInput');
+  setupDropdownForElement('editTopicDropdownBtn', 'editTopicDropdownMenu', 'editQuestion');
+}
+
+function setupDropdownForElement(btnId, menuId, inputId) {
+  const dropdownBtn = document.getElementById(btnId);
+  const dropdownMenu = document.getElementById(menuId);
+  const questionInput = document.getElementById(inputId);
+
+  if (!dropdownBtn || !dropdownMenu || !questionInput) {
+    return;
+  }
+
+  // Toggle dropdown visibility
+  dropdownBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const isOpen = dropdownMenu.classList.contains('show');
+
+    // Close all other dropdowns first
+    document.querySelectorAll('.topic-dropdown-menu').forEach(menu => {
+      if (menu !== dropdownMenu) {
+        menu.classList.remove('show');
+      }
+    });
+    document.querySelectorAll('.topic-dropdown-btn').forEach(btn => {
+      if (btn !== dropdownBtn) {
+        btn.classList.remove('active');
+      }
+    });
+
+    if (isOpen) {
+      dropdownMenu.classList.remove('show');
+      dropdownBtn.classList.remove('active');
+    } else {
+      dropdownMenu.classList.add('show');
+      dropdownBtn.classList.add('active');
+    }
+  });
+
+  // Handle option selection
+  dropdownMenu.addEventListener('click', (e) => {
+    if (e.target.classList.contains('dropdown-option')) {
+      const selectedText = e.target.textContent;
+      questionInput.value = selectedText;
+      questionInput.focus();
+
+      // Close dropdown
+      dropdownMenu.classList.remove('show');
+      dropdownBtn.classList.remove('active');
+    }
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.topic-input-container')) {
+      dropdownMenu.classList.remove('show');
+      dropdownBtn.classList.remove('active');
+    }
+  });
+
+  // Close dropdown on escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && dropdownMenu.classList.contains('show')) {
+      dropdownMenu.classList.remove('show');
+      dropdownBtn.classList.remove('active');
+    }
+  });
+}
+
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
@@ -1170,14 +1288,42 @@ async function insertContextToPage() {
 
 // Build context text from items
 async function buildContextText() {
-  // Load personal description from storage
-  const personalDescriptionData = await chrome.storage.local.get(['personalDescription']);
+  // Load personal description and basic info settings from storage
+  const storageData = await chrome.storage.local.get([
+    'personalDescription',
+    'includeBasicInfo',
+    'profileName',
+    'profileAge',
+    'profileGender',
+    'profileLocation',
+    'profileOccupation',
+    'profileLanguages',
+    'profileEducation'
+  ]);
 
   let text = '# Personal Context\n\n';
 
   // Add personal description at the top if available
-  if (personalDescriptionData.personalDescription) {
-    text += `## About Me\n${personalDescriptionData.personalDescription}\n\n`;
+  if (storageData.personalDescription) {
+    text += `## About Me\n${storageData.personalDescription}\n\n`;
+  }
+
+  // Add basic information if toggle is enabled (defaults to true)
+  const includeBasicInfo = storageData.includeBasicInfo !== undefined ? storageData.includeBasicInfo : true;
+  if (includeBasicInfo) {
+    const basicInfoParts = [];
+
+    if (storageData.profileName) basicInfoParts.push(`**Name**: ${storageData.profileName}`);
+    if (storageData.profileAge) basicInfoParts.push(`**Age**: ${storageData.profileAge}`);
+    if (storageData.profileGender) basicInfoParts.push(`**Gender**: ${storageData.profileGender}`);
+    if (storageData.profileLocation) basicInfoParts.push(`**Location**: ${storageData.profileLocation}`);
+    if (storageData.profileOccupation) basicInfoParts.push(`**Occupation**: ${storageData.profileOccupation}`);
+    if (storageData.profileLanguages) basicInfoParts.push(`**Languages**: ${storageData.profileLanguages}`);
+    if (storageData.profileEducation) basicInfoParts.push(`**Education**: ${storageData.profileEducation}`);
+
+    if (basicInfoParts.length > 0) {
+      text += `## Basic Information\n${basicInfoParts.join('\n')}\n\n`;
+    }
   }
 
   // Use filtered items (respects subprofile selection) instead of all contextItems
@@ -1226,6 +1372,13 @@ function openProfileModal() {
   elements.profileModal.style.display = 'flex';
   loadProfileImage();
   loadPersonalDescription();
+  loadBasicInfoToggle();
+  loadProfileAge();
+  loadProfileGender();
+  loadProfileLocation();
+  loadProfileOccupation();
+  loadProfileLanguages();
+  loadProfileEducation();
 }
 
 function closeProfileModal() {
@@ -1300,10 +1453,16 @@ function loadPersonalDescription() {
 // Profile Name Functions
 function handleProfileNameChange() {
   const name = elements.profileName.textContent.trim();
-  
+
   // Update avatar letter immediately while typing
   updateAvatarLetter(name);
-  
+
+  // Sync with the basic info name field
+  const basicNameField = document.getElementById('profileNameBasic');
+  if (basicNameField) {
+    basicNameField.value = name;
+  }
+
   // Save with debouncing
   clearTimeout(window.nameChangeTimeout);
   window.nameChangeTimeout = setTimeout(() => {
@@ -1336,10 +1495,22 @@ function loadProfileName() {
     if (result.profileName) {
       elements.profileName.textContent = result.profileName;
       updateAvatarLetter(result.profileName);
+
+      // Also populate the basic info name field
+      const basicNameField = document.getElementById('profileNameBasic');
+      if (basicNameField) {
+        basicNameField.value = result.profileName;
+      }
     } else {
       // Show placeholder if no name is set
       elements.profileName.textContent = '';
       updateAvatarLetter('');
+
+      // Clear the basic info name field too
+      const basicNameField = document.getElementById('profileNameBasic');
+      if (basicNameField) {
+        basicNameField.value = '';
+      }
     }
   });
 }
@@ -1357,6 +1528,238 @@ function updateAvatarLetter(name) {
   }
 }
 
+// Basic Information Functions
+function handleBasicInfoToggleChange() {
+  const toggle = document.getElementById('includeBasicInfoToggle');
+  if (toggle) {
+    const includeBasicInfo = toggle.checked;
+    saveBasicInfoToggle(includeBasicInfo);
+  }
+}
+
+function saveBasicInfoToggle(includeBasicInfo) {
+  chrome.storage.local.set({ includeBasicInfo: includeBasicInfo }, () => {
+    console.log('Include basic info toggle saved:', includeBasicInfo);
+  });
+}
+
+function loadBasicInfoToggle() {
+  chrome.storage.local.get(['includeBasicInfo'], (result) => {
+    const toggle = document.getElementById('includeBasicInfoToggle');
+    if (toggle) {
+      // Default to true if not set
+      const includeBasicInfo = result.includeBasicInfo !== undefined ? result.includeBasicInfo : true;
+      toggle.checked = includeBasicInfo;
+    }
+  });
+}
+
+function handleProfileNameBasicChange() {
+  const name = document.getElementById('profileNameBasic').value.trim();
+
+  // Update avatar letter immediately while typing
+  updateAvatarLetter(name);
+
+  // Sync with the editable profile name field
+  if (elements.profileName) {
+    elements.profileName.textContent = name;
+  }
+
+  // Save with debouncing
+  clearTimeout(window.nameBasicChangeTimeout);
+  window.nameBasicChangeTimeout = setTimeout(() => {
+    saveProfileName(name);
+  }, 500);
+}
+
+function handleProfileNameBasicBlur() {
+  const name = document.getElementById('profileNameBasic').value.trim();
+
+  // Save immediately on blur
+  clearTimeout(window.nameBasicChangeTimeout);
+  saveProfileName(name);
+}
+
+
+function handleProfileAgeChange() {
+  const age = document.getElementById('profileAge').value.trim();
+
+  // Save with debouncing
+  clearTimeout(window.ageChangeTimeout);
+  window.ageChangeTimeout = setTimeout(() => {
+    saveProfileAge(age);
+  }, 500);
+}
+
+function handleProfileAgeBlur() {
+  const age = document.getElementById('profileAge').value.trim();
+
+  // Save immediately on blur
+  clearTimeout(window.ageChangeTimeout);
+  saveProfileAge(age);
+}
+
+function saveProfileAge(age) {
+  chrome.storage.local.set({ profileAge: age }, () => {
+    console.log('Profile age saved:', age);
+  });
+}
+
+function loadProfileAge() {
+  chrome.storage.local.get(['profileAge'], (result) => {
+    if (result.profileAge && document.getElementById('profileAge')) {
+      document.getElementById('profileAge').value = result.profileAge;
+    }
+  });
+}
+
+function handleProfileGenderChange() {
+  const gender = document.getElementById('profileGender').value;
+  saveProfileGender(gender);
+}
+
+function saveProfileGender(gender) {
+  chrome.storage.local.set({ profileGender: gender }, () => {
+    console.log('Profile gender saved:', gender);
+  });
+}
+
+function loadProfileGender() {
+  chrome.storage.local.get(['profileGender'], (result) => {
+    if (result.profileGender && document.getElementById('profileGender')) {
+      document.getElementById('profileGender').value = result.profileGender;
+    }
+  });
+}
+
+function handleProfileLocationChange() {
+  const location = document.getElementById('profileLocation').value.trim();
+
+  // Save with debouncing
+  clearTimeout(window.locationChangeTimeout);
+  window.locationChangeTimeout = setTimeout(() => {
+    saveProfileLocation(location);
+  }, 500);
+}
+
+function handleProfileLocationBlur() {
+  const location = document.getElementById('profileLocation').value.trim();
+
+  // Save immediately on blur
+  clearTimeout(window.locationChangeTimeout);
+  saveProfileLocation(location);
+}
+
+function saveProfileLocation(location) {
+  chrome.storage.local.set({ profileLocation: location }, () => {
+    console.log('Profile location saved:', location);
+  });
+}
+
+function loadProfileLocation() {
+  chrome.storage.local.get(['profileLocation'], (result) => {
+    if (result.profileLocation && document.getElementById('profileLocation')) {
+      document.getElementById('profileLocation').value = result.profileLocation;
+    }
+  });
+}
+
+function handleProfileOccupationChange() {
+  const occupation = document.getElementById('profileOccupation').value.trim();
+
+  // Save with debouncing
+  clearTimeout(window.occupationChangeTimeout);
+  window.occupationChangeTimeout = setTimeout(() => {
+    saveProfileOccupation(occupation);
+  }, 500);
+}
+
+function handleProfileOccupationBlur() {
+  const occupation = document.getElementById('profileOccupation').value.trim();
+
+  // Save immediately on blur
+  clearTimeout(window.occupationChangeTimeout);
+  saveProfileOccupation(occupation);
+}
+
+function saveProfileOccupation(occupation) {
+  chrome.storage.local.set({ profileOccupation: occupation }, () => {
+    console.log('Profile occupation saved:', occupation);
+  });
+}
+
+function loadProfileOccupation() {
+  chrome.storage.local.get(['profileOccupation'], (result) => {
+    if (result.profileOccupation && document.getElementById('profileOccupation')) {
+      document.getElementById('profileOccupation').value = result.profileOccupation;
+    }
+  });
+}
+
+function handleProfileLanguagesChange() {
+  const languages = document.getElementById('profileLanguages').value.trim();
+
+  // Save with debouncing
+  clearTimeout(window.languagesChangeTimeout);
+  window.languagesChangeTimeout = setTimeout(() => {
+    saveProfileLanguages(languages);
+  }, 500);
+}
+
+function handleProfileLanguagesBlur() {
+  const languages = document.getElementById('profileLanguages').value.trim();
+
+  // Save immediately on blur
+  clearTimeout(window.languagesChangeTimeout);
+  saveProfileLanguages(languages);
+}
+
+function saveProfileLanguages(languages) {
+  chrome.storage.local.set({ profileLanguages: languages }, () => {
+    console.log('Profile languages saved:', languages);
+  });
+}
+
+function loadProfileLanguages() {
+  chrome.storage.local.get(['profileLanguages'], (result) => {
+    if (result.profileLanguages && document.getElementById('profileLanguages')) {
+      document.getElementById('profileLanguages').value = result.profileLanguages;
+    }
+  });
+}
+
+function handleProfileEducationChange() {
+  const education = document.getElementById('profileEducation').value.trim();
+
+  // Save with debouncing
+  clearTimeout(window.educationChangeTimeout);
+  window.educationChangeTimeout = setTimeout(() => {
+    saveProfileEducation(education);
+  }, 500);
+}
+
+function handleProfileEducationBlur() {
+  const education = document.getElementById('profileEducation').value.trim();
+
+  // Save immediately on blur
+  clearTimeout(window.educationChangeTimeout);
+  saveProfileEducation(education);
+}
+
+function saveProfileEducation(education) {
+  chrome.storage.local.set({ profileEducation: education }, () => {
+    console.log('Profile education saved:', education);
+  });
+}
+
+function loadProfileEducation() {
+  chrome.storage.local.get(['profileEducation'], (result) => {
+    if (result.profileEducation && document.getElementById('profileEducation')) {
+      document.getElementById('profileEducation').value = result.profileEducation;
+    }
+  });
+}
+
 function openPrivacyStatement(e) {
   e.preventDefault();
   // Open the privacy statement in a new tab
@@ -1368,7 +1771,19 @@ function openPrivacyStatement(e) {
 // Edit Modal Functions
 function openEditModal(item) {
   currentEditingItem = item;
-  
+
+  // Hide dropdown when editing existing item
+  const dropdownContainer = document.getElementById('editDropdownContainer');
+  if (dropdownContainer) {
+    dropdownContainer.style.display = 'none';
+  }
+
+  // Remove padding from input when dropdown is hidden
+  const editQuestion = document.getElementById('editQuestion');
+  if (editQuestion) {
+    editQuestion.style.paddingRight = '';
+  }
+
   // Check if the item's category is a predefined one
   const predefinedCategories = [
     'Hobbies', 'Food & Drink', 'Entertainment & Media', 'Travel & Activities',
@@ -1419,6 +1834,19 @@ function closeEditModal() {
 
 function openEditModalForAdd() {
   currentEditingItem = null; // Clear any existing item
+
+  // Show dropdown when adding new item
+  const dropdownContainer = document.getElementById('editDropdownContainer');
+  if (dropdownContainer) {
+    dropdownContainer.style.display = 'flex';
+  }
+
+  // Add padding to input for dropdown button
+  const editQuestion = document.getElementById('editQuestion');
+  if (editQuestion) {
+    editQuestion.style.paddingRight = '40px';
+    editQuestion.placeholder = 'Type your own topic or select from dropdown';
+  }
 
   // Reset form fields for new item
   elements.editCategory.value = 'Hobbies'; // Default category
@@ -1543,7 +1971,7 @@ function saveEditedItem() {
       updatedAt: new Date()
     };
 
-    contextItems.push(newItem);
+    contextItems.unshift(newItem); // Add to beginning of array
     saveItems();
     filterItems();
     updateUI();
@@ -3430,6 +3858,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Fix: Add subprofile selector to the existing setupEventListeners function
 // We need to find and modify the original function instead of overriding it
-// Export functions for quiz to use
+// Export functions and data for quiz to use
 window.updateUI = updateUI;
 window.filterItems = filterItems;
+window.loadItems = loadItems;
+window.getContextItems = () => contextItems;
+window.addContextItem = (item) => {
+  contextItems.unshift(item);
+};

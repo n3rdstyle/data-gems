@@ -5,6 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Gems - Quick Preference Quiz</title>
     <style>
+        :root {
+            /* Extension Design System Colors */
+            --background: #FFFCF6;
+            --foreground: #021127;
+            --card: #FFFFFF;
+            --primary: #EC6F95;
+            --primary-hover: #e84c88;
+            --primary-foreground: #FFFCF6;
+            --secondary: #F7F7F7;
+            --muted-foreground: #717171;
+            --accent: #00A699;
+            --border: #DDDDDD;
+            --radius: 12px;
+            --radius-large: 16px;
+
+            /* Typography */
+            --font-family: Circular, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --font-weight-medium: 500;
+            --font-weight-bold: 600;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-card: rgb(0 0 0 / 12%) 0px 6px 16px;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,17 +39,127 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: var(--font-family);
+            background: var(--background);
+            color: var(--foreground);
             min-height: 100vh;
-            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Quiz Container */
+        .quiz-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
             position: relative;
+        }
+
+        /* Header */
+        .quiz-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            background: rgba(255, 252, 246, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .quiz-branding {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .quiz-logo {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: var(--font-weight-bold);
+            font-size: 16px;
+        }
+
+        .quiz-title {
+            font-size: 18px;
+            font-weight: var(--font-weight-bold);
+            color: var(--foreground);
+        }
+
+        .quiz-progress {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--card);
+            padding: 8px 16px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .progress-text {
+            font-size: 14px;
+            color: var(--muted-foreground);
+            font-weight: var(--font-weight-medium);
+        }
+
+        .progress-count {
+            font-weight: var(--font-weight-bold);
+            color: var(--primary);
+        }
+
+        /* Question Overlay */
+        .question-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(255, 252, 246, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 24px 32px;
+            border-radius: var(--radius-large);
+            box-shadow: var(--shadow-card);
+            z-index: 50;
+            pointer-events: none;
+            max-width: 600px;
+            margin: 0 20px;
+        }
+
+        .question-category {
+            display: inline-block;
+            background: var(--secondary);
+            color: var(--muted-foreground);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: var(--font-weight-medium);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .question-text {
+            font-size: clamp(18px, 3vw, 24px);
+            font-weight: var(--font-weight-bold);
+            color: var(--foreground);
+            line-height: 1.3;
         }
 
         /* Split Screen Layout */
         .split-container {
+            flex: 1;
             display: flex;
-            height: 100vh;
-            width: 100vw;
+            margin-top: 80px; /* Account for header */
         }
 
         .choice-panel {
@@ -33,164 +170,126 @@
             align-items: center;
             cursor: pointer;
             position: relative;
-            overflow: hidden;
             padding: 40px;
+            transition: all 0.3s ease;
+            min-height: calc(100vh - 160px); /* Account for header and controls */
         }
 
         .split-container:hover .choice-panel:not(:hover) {
-            opacity: 0.6;
+            opacity: 0.7;
         }
 
-        .choice-panel {
-            transition: opacity 0.3s ease;
-        }
-
-        .choice-left {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-
-        .choice-right {
+        .choice-panel.yes {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
         }
 
+        .choice-panel.no {
+            background: linear-gradient(135deg, #FDB171 0%, #EC6F95 100%);
+            color: white;
+        }
+
         .choice-text {
-            font-size: clamp(28px, 4vw, 48px);
-            font-weight: 700;
+            font-size: clamp(24px, 4vw, 36px);
+            font-weight: var(--font-weight-bold);
             text-align: center;
             line-height: 1.2;
             max-width: 80%;
             z-index: 2;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        /* Header Overlay */
-        .quiz-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 20px;
-            z-index: 100;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .choice-icon {
+            margin-bottom: 16px;
+            opacity: 0.9;
         }
 
-        .quiz-progress {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: white;
-            font-weight: 600;
-        }
-
-        .progress-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .progress-dot.active {
-            background: white;
-        }
-
-        .quiz-question-header {
-            position: absolute;
-            top: 30%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: white;
-            font-weight: 600;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 16px 32px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            pointer-events: none;
-            z-index: 50;
-        }
-
-        .question-text {
-            font-size: clamp(18px, 3vw, 24px);
-            margin-bottom: 8px;
-        }
-
-        .question-category {
-            font-size: 14px;
-            opacity: 0.8;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
+        /* Controls */
         .quiz-controls {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .control-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            backdrop-filter: blur(10px);
-        }
-
-        .control-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.1);
-        }
-
-        /* Bottom Controls */
-        .bottom-controls {
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
+            justify-content: center;
+            align-items: center;
             gap: 16px;
+            flex-wrap: wrap;
             z-index: 100;
         }
 
-        .bottom-btn {
-            padding: 12px 24px;
-            border-radius: 25px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
-            font-weight: 500;
+        .control-group {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            border: 1px solid rgba(221, 221, 221, 0.5);
+            background: rgba(255, 252, 246, 0.95);
+            color: var(--foreground);
+            border-radius: var(--radius);
             cursor: pointer;
             transition: all 0.2s ease;
-            backdrop-filter: blur(10px);
+            font-size: 14px;
+            font-weight: var(--font-weight-medium);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-sm);
         }
 
-        .bottom-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
+        .control-btn:hover {
+            background: var(--secondary);
+            border-color: var(--primary);
         }
 
-        .bottom-btn:disabled {
+        .control-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
 
-        .control-btn.active {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: white;
+        .control-btn.primary {
+            background: var(--primary);
+            color: var(--primary-foreground);
+            border-color: var(--primary);
+        }
+
+        .control-btn.primary:hover {
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        .feedback-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .feedback-btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid rgba(221, 221, 221, 0.5);
+            background: rgba(255, 252, 246, 0.95);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .feedback-btn:hover {
+            background: var(--secondary);
+        }
+
+        .feedback-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: var(--primary-foreground);
         }
 
         /* Loading State */
@@ -200,20 +299,19 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--background);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: white;
             z-index: 1000;
         }
 
         .spinner {
-            width: 64px;
-            height: 64px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top-color: white;
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--secondary);
+            border-top-color: var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 24px;
@@ -224,60 +322,76 @@
         }
 
         .loading-text {
-            font-size: 18px;
-            font-weight: 500;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .split-container {
-                flex-direction: column;
-            }
-
-            .choice-text {
-                font-size: clamp(22px, 6vw, 32px);
-            }
-
-            .quiz-question-header {
-                position: relative;
-                top: auto;
-                left: auto;
-                transform: none;
-                margin-bottom: 20px;
-            }
-
-            .bottom-controls {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
+            font-size: 16px;
+            font-weight: var(--font-weight-medium);
+            color: var(--muted-foreground);
         }
 
         /* Success Message */
         .success-message {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 20px 32px;
-            background: rgba(16, 185, 129, 0.95);
+            top: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            background: var(--accent);
             color: white;
-            border-radius: 16px;
-            font-weight: 600;
-            font-size: 18px;
-            backdrop-filter: blur(10px);
-            animation: popIn 0.3s ease;
+            border-radius: var(--radius);
+            font-weight: var(--font-weight-medium);
+            font-size: 14px;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease;
             z-index: 1000;
         }
 
-        @keyframes popIn {
+        @keyframes slideIn {
             from {
                 opacity: 0;
-                transform: translate(-50%, -50%) scale(0.8);
+                transform: translateX(100%);
             }
             to {
                 opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
+                transform: translateX(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .split-container {
+                flex-direction: column;
+                margin-top: 70px;
+            }
+
+            .choice-panel {
+                min-height: calc(50vh - 80px);
+                padding: 30px 20px;
+            }
+
+            .choice-text {
+                font-size: clamp(20px, 5vw, 28px);
+            }
+
+            .question-overlay {
+                position: relative;
+                top: auto;
+                left: auto;
+                transform: none;
+                margin: 20px;
+                margin-bottom: 0;
+            }
+
+            .quiz-controls {
+                bottom: 10px;
+                gap: 12px;
+            }
+
+            .control-group {
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .quiz-header {
+                padding: 16px 20px;
             }
         }
     </style>
@@ -291,73 +405,88 @@
 
     <!-- Main Quiz -->
     <div id="quizContent" style="display: none;">
-        <!-- Header with Progress -->
-        <div class="quiz-header">
-            <div class="quiz-progress">
-                <span>Added: </span>
-                <span id="progressCount">0</span>
-                <div style="display: flex; gap: 4px; margin-left: 12px;">
-                    <div class="progress-dot active"></div>
-                    <div class="progress-dot"></div>
-                    <div class="progress-dot"></div>
-                    <div class="progress-dot"></div>
-                    <div class="progress-dot"></div>
+        <div class="quiz-container">
+            <!-- Header -->
+            <div class="quiz-header">
+                <div class="quiz-branding">
+                    <div class="quiz-logo">DG</div>
+                    <div class="quiz-title">Quick Preference Quiz</div>
+                </div>
+                <div class="quiz-progress">
+                    <span class="progress-text">Added: </span>
+                    <span class="progress-count" id="progressCount">0</span>
                 </div>
             </div>
+
+            <!-- Question Overlay -->
+            <div class="question-overlay">
+                <div class="question-category" id="questionCategory">Food & Drink</div>
+                <div class="question-text" id="questionText">Do you enjoy cooking at home?</div>
+            </div>
+
+            <!-- Split Screen Choices -->
+            <div class="split-container">
+                <div class="choice-panel yes" id="yesChoice">
+                    <div class="choice-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20,6 9,17 4,12"></polyline>
+                        </svg>
+                    </div>
+                    <div class="choice-text" id="yesText">Yes, I do</div>
+                </div>
+                <div class="choice-panel no" id="noChoice">
+                    <div class="choice-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </div>
+                    <div class="choice-text" id="noText">No, I don't</div>
+                </div>
+            </div>
+
+            <!-- Controls -->
             <div class="quiz-controls">
-                <button class="control-btn" id="thumbsUpBtn" title="Good question">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
-                    </svg>
-                </button>
-                <button class="control-btn" id="thumbsDownBtn" title="Poor question">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
-                    </svg>
-                </button>
-                <button id="exitBtn" class="control-btn" title="Exit quiz">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
+                <div class="control-group">
+                    <button class="control-btn" id="undoBtn" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="1 4 1 10 7 10"></polyline>
+                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                        </svg>
+                        Undo
+                    </button>
+                    <button class="control-btn" id="skipBtn">
+                        Skip
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="12,5 19,12 12,19"></polyline>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="control-group">
+                    <div class="feedback-buttons">
+                        <button class="feedback-btn" id="thumbsUpBtn" title="Good question">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                            </svg>
+                        </button>
+                        <button class="feedback-btn" id="thumbsDownBtn" title="Poor question">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <button class="control-btn primary" id="exitBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        Exit Quiz
+                    </button>
+                </div>
             </div>
         </div>
-
-        <!-- Question Overlay -->
-        <div class="quiz-question-header">
-            <div class="question-text" id="questionText">Do you enjoy cooking at home?</div>
-            <div class="question-category" id="questionCategory">Food & Drink</div>
-        </div>
-
-        <!-- Split Screen Choices -->
-        <div class="split-container">
-            <div class="choice-panel choice-left" id="yesChoice">
-                <div class="choice-text" id="yesText">Yes, I do</div>
-            </div>
-            <div class="choice-panel choice-right" id="noChoice">
-                <div class="choice-text" id="noText">No, I don't</div>
-            </div>
-        </div>
-
-        <!-- Bottom Controls -->
-        <div class="bottom-controls">
-            <button class="bottom-btn" id="undoBtn" disabled>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="1 4 1 10 7 10"></polyline>
-                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-                </svg>
-                Undo
-            </button>
-            <button class="bottom-btn" id="skipBtn">
-                Skip
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                    <polyline points="12,5 19,12 12,19"></polyline>
-                </svg>
-            </button>
-        </div>
-
     </div>
 
     <script src="src/quiz-page.js"></script>
