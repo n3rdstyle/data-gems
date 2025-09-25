@@ -81,7 +81,6 @@ export async function POST(request: Request) {
         {
           email: sanitizedEmail,
           source: 'waitlist',
-          created_at: new Date().toISOString(),
           metadata: {
             user_agent: request.headers.get('user-agent'),
             referer: request.headers.get('referer'),

@@ -93,29 +93,29 @@ export default function WaitlistPage() {
             />
           </div>
 
-          <div className="space-y-6 sm:space-y-8 text-center">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-[#FDB171] to-[#EC6F95] leading-tight px-2">
+          <div className="space-y-4 sm:space-y-6 text-center">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-[#FDB171] to-[#EC6F95] px-2 sm:px-0">
               The Personal Context Provider for your AI
             </h1>
-            <p className="text-lg sm:text-xl lg:text-2xl text-foreground max-w-lg mx-auto px-4 sm:px-2 leading-relaxed">
+            <p className="text-lg sm:text-base md:text-lg lg:text-xl text-foreground max-w-lg mx-auto px-4 sm:px-0">
               Data Gems is the personal context provider that makes an AI truly understand you. Build your personal profile continuously, and attach it into any AI conversation with a single click.
             </p>
           </div>
 
           {/* Waitlist Form */}
-          <div className="max-w-md mx-auto space-y-5 px-4 sm:px-0">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:flex-row sm:gap-3">
+          <div className="max-w-md mx-auto space-y-4 px-2 sm:px-0">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:gap-3">
               <Input
                 type="email"
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-14 sm:h-12 text-base bg-card border-border text-foreground placeholder:text-muted-foreground w-full"
+                className="h-12 bg-card border-border text-foreground placeholder:text-muted-foreground w-full"
                 required
               />
               <Button
                 type="submit"
-                className="h-14 sm:h-12 px-8 w-full sm:w-auto text-base font-medium"
+                className="h-12 px-8 w-full sm:w-auto"
                 disabled={isLoading || !consentGiven}
               >
                 {isLoading ? (
@@ -127,12 +127,12 @@ export default function WaitlistPage() {
             </form>
 
             {/* GDPR Consent Checkbox */}
-            <label className="flex items-start gap-3 text-base sm:text-sm text-muted-foreground cursor-pointer px-1">
+            <label className="flex items-start gap-3 text-sm text-muted-foreground cursor-pointer">
               <input
                 type="checkbox"
                 checked={consentGiven}
                 onChange={(e) => setConsentGiven(e.target.checked)}
-                className="mt-1 sm:mt-0.5 w-5 h-5 sm:w-4 sm:h-4 text-primary bg-transparent border-border rounded focus:ring-primary focus:ring-2"
+                className="mt-0.5 w-4 h-4 text-primary bg-transparent border-border rounded focus:ring-primary focus:ring-2"
                 required
               />
               <span className="leading-relaxed">
@@ -142,34 +142,34 @@ export default function WaitlistPage() {
           </div>
 
           {/* Social Proof */}
-          <div className="flex flex-col items-center gap-6 pb-24 sm:pb-8 px-4">
-            <div className="flex flex-col items-center gap-5 max-w-sm sm:max-w-none">
-              <div className="flex -space-x-2 sm:-space-x-3">
-                <Avatar className="border-2 border-background w-12 h-12 sm:w-14 sm:h-14">
-                  <AvatarFallback className="text-sm sm:text-base font-semibold text-[#04214E]" style={{background: 'linear-gradient(135deg, #e84c88 0%, #f47b6a 25%, #f9a05c 50%, #fdb863 75%, #ffd194 100%)'}}>
+          <div className="flex flex-col items-center gap-4 pb-20 sm:pb-8">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex -space-x-3">
+                <Avatar className="border-2 border-background w-10 h-10 sm:w-12 sm:h-12">
+                  <AvatarFallback className="text-xs sm:text-sm font-semibold text-[#04214E]" style={{background: 'linear-gradient(135deg, #e84c88 0%, #f47b6a 25%, #f9a05c 50%, #fdb863 75%, #ffd194 100%)'}}>
                     DB
                   </AvatarFallback>
                 </Avatar>
-                <Avatar className="border-2 border-background w-12 h-12 sm:w-14 sm:h-14">
-                  <AvatarFallback className="text-sm sm:text-base font-semibold text-[#04214E]" style={{background: 'linear-gradient(135deg, #e84c88 0%, #f47b6a 25%, #f9a05c 50%, #fdb863 75%, #ffd194 100%)'}}>
+                <Avatar className="border-2 border-background w-10 h-10 sm:w-12 sm:h-12">
+                  <AvatarFallback className="text-xs sm:text-sm font-semibold text-[#04214E]" style={{background: 'linear-gradient(135deg, #e84c88 0%, #f47b6a 25%, #f9a05c 50%, #fdb863 75%, #ffd194 100%)'}}>
                     ML
                   </AvatarFallback>
                 </Avatar>
-                <Avatar className="border-2 border-background w-12 h-12 sm:w-14 sm:h-14">
-                  <AvatarFallback className="text-sm sm:text-base font-semibold text-[#04214E]" style={{background: 'linear-gradient(135deg, #e84c88 0%, #f47b6a 25%, #f9a05c 50%, #fdb863 75%, #ffd194 100%)'}}>
+                <Avatar className="border-2 border-background w-10 h-10 sm:w-12 sm:h-12">
+                  <AvatarFallback className="text-xs sm:text-sm font-semibold text-[#04214E]" style={{background: 'linear-gradient(135deg, #e84c88 0%, #f47b6a 25%, #f9a05c 50%, #fdb863 75%, #ffd194 100%)'}}>
                     MP
                   </AvatarFallback>
                 </Avatar>
-                <Avatar className="border-2 border-background w-12 h-12 sm:w-14 sm:h-14">
-                  <AvatarFallback className="text-sm sm:text-base font-semibold text-[#04214E]" style={{background: 'linear-gradient(135deg, #e84c88 0%, #f47b6a 25%, #f9a05c 50%, #fdb863 75%, #ffd194 100%)'}}>
+                <Avatar className="border-2 border-background w-10 h-10 sm:w-12 sm:h-12">
+                  <AvatarFallback className="text-xs sm:text-sm font-semibold text-[#04214E]" style={{background: 'linear-gradient(135deg, #e84c88 0%, #f47b6a 25%, #f9a05c 50%, #fdb863 75%, #ffd194 100%)'}}>
                     LS
                   </AvatarFallback>
                 </Avatar>
               </div>
-              <div className="text-center">
-                <div className="font-bold text-foreground flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-base sm:text-lg">
-                  <Icons.arrowRight className="w-5 h-5 hidden sm:block" />
-                  <span className="text-center leading-tight">Join our growing community of Gemers</span>
+              <div className="text-center px-2">
+                <div className="font-bold text-foreground flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-sm sm:text-base">
+                  <Icons.arrowRight className="w-4 h-4 hidden sm:block" />
+                  <span className="break-words">Join our growing community of Gemers</span>
                 </div>
               </div>
             </div>
