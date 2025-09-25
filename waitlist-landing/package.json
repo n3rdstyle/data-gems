@@ -1,0 +1,24 @@
+{
+  "name": "data-gems-waitlist",
+  "version": "1.0.0",
+  "description": "Data Gems waitlist landing page",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python -m http.server 3000",
+    "build": "echo 'Static site - no build process needed'",
+    "preview": "python -m http.server 3001"
+  },
+  "keywords": [
+    "ai",
+    "chrome-extension",
+    "personal-context",
+    "waitlist",
+    "landing-page"
+  ],
+  "author": "Data Gems Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/n3rdstyle/data-gems.git"
+  }
+}

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Gems - Your Personal AI Context Provider</title>
+    <meta name="description" content="Build your personal profile and inject it into AI chats with one click. Make every AI conversation more personal and relevant to you.">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Data Gems - Your Personal AI Context Provider">
+    <meta property="og:description" content="Build your personal profile and inject it into AI chats with one click. Make every AI conversation more personal and relevant to you.">
+    <meta property="og:url" content="https://datagems.vercel.app">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="fullscreen-waitlist">
+    <!-- Minimalistic Fullscreen Waitlist -->
+    <div class="fullscreen-waitlist">
+        <!-- Logo Top Left -->
+        <div class="logo-corner">
+            <img src="assets/icon-48.png" alt="Data Gems" class="logo">
+            <span class="logo-text">Data Gems</span>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-container">
+            <div class="content-side">
+                <h1 class="main-title">
+                    Your Personal AI Context Provider
+                </h1>
+
+                <p class="main-subtitle">
+                    Build your personal profile and inject it into AI chats with one click.
+                    Make every AI conversation more personal and relevant to you.
+                </p>
+
+                <div class="stats">
+                    <div class="stat">
+                        <span class="stat-number" id="waitlistCount">500+</span>
+                        <span class="stat-label">Early Users</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">10+</span>
+                        <span class="stat-label">AI Platforms</span>
+                    </div>
+                </div>
+
+                <!-- Waitlist Form -->
+                <div class="form-container">
+                    <form class="waitlist-form" id="waitlistForm">
+                        <div class="form-group">
+                            <input type="email" id="email" name="email" class="form-input" placeholder="your@email.com" required>
+                        </div>
+
+                        <div class="form-group">
+                            <input type="text" id="name" name="name" class="form-input" placeholder="Your first name (optional)">
+                        </div>
+
+                        <div class="form-group">
+                            <select id="use-case" name="use-case" class="form-select">
+                                <option value="">How do you plan to use Data Gems?</option>
+                                <option value="work">Work & Professional</option>
+                                <option value="creative">Creative Work</option>
+                                <option value="education">Education & Learning</option>
+                                <option value="personal">Personal Projects</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="submit-button" id="submitBtn">
+                            <span class="button-text">Join Waitlist</span>
+                            <div class="button-spinner" style="display: none;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+                                </svg>
+                            </div>
+                        </button>
+                    </form>
+
+                    <!-- Success Message -->
+                    <div class="success-message" id="successMessage" style="display: none;">
+                        <div class="success-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20,6 9,17 4,12"></polyline>
+                            </svg>
+                        </div>
+                        <h3>You're on the list!</h3>
+                        <p>We'll notify you as soon as Data Gems is ready for early access.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Side -->
+            <div class="visual-side">
+                <div class="demo-card">
+                    <div class="card-header">
+                        <div class="card-dots">
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                        </div>
+                        <span class="card-title">ChatGPT</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="message ai-message">
+                            <div class="message-avatar ai-avatar">AI</div>
+                            <div class="message-text">How can I help you today?</div>
+                        </div>
+                        <div class="injection-demo">
+                            <div class="injection-button">
+                                <img src="assets/icon-16.png" alt="DG" class="injection-icon">
+                                <span>Inject Profile</span>
+                            </div>
+                            <div class="injection-preview">
+                                <span class="preview-text">Software developer, coffee lover, prefers React...</span>
+                            </div>
+                        </div>
+                        <div class="message user-message">
+                            <div class="message-text">Help me build a personal portfolio website</div>
+                            <div class="message-avatar user-avatar">You</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
