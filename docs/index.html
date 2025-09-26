@@ -122,7 +122,7 @@
         
         <h1>Privacy Policy</h1>
         <div class="subtitle">The Personal Context Provider for your AI conversations</div>
-        <div class="last-updated">Last Updated: September 15, 2025</div>
+        <div class="last-updated">Last Updated: September 26, 2025 - Version 1.1.0</div>
 
         <h2>Overview</h2>
         <p>Data Gems ("the Extension") is a Chrome browser extension that helps users inject their personal profile information into AI chat interfaces. We are committed to protecting your privacy and ensuring your personal data remains secure.</p>
@@ -132,6 +132,9 @@
         <h3>What We Store</h3>
         <ul>
             <li><strong>Personal profile information</strong>: Questions and answers you create about yourself (e.g., preferences, habits, work information)</li>
+            <li><strong>Quiz responses</strong>: Your answers to the Quiz of Gems feature for profile enrichment</li>
+            <li><strong>Prompt library</strong>: Custom prompts and commands you create for quick access</li>
+            <li><strong>Subprofiles</strong>: Different context configurations for various use cases (work, personal, projects)</li>
             <li><strong>Extension settings</strong>: Your preferences for how the extension operates</li>
             <li><strong>Last used template</strong>: Your most recent profile selection for quick access</li>
         </ul>
@@ -172,10 +175,12 @@
         <h2>User Rights</h2>
         <p>You have complete control over your data:</p>
         <ul>
-            <li><strong>Export</strong>: Download all your data at any time</li>
-            <li><strong>Import</strong>: Restore your data from a backup</li>
+            <li><strong>Export</strong>: Download all your data including prompt library at any time</li>
+            <li><strong>Import</strong>: Restore your data and prompts from a backup</li>
             <li><strong>Delete</strong>: Remove any or all stored information</li>
             <li><strong>Modify</strong>: Edit your profile information at any time</li>
+            <li><strong>Subprofile Management</strong>: Create and switch between different context profiles</li>
+            <li><strong>Quiz Control</strong>: Take or skip the interactive quiz to build your profile</li>
         </ul>
 
         <h2>Permissions</h2>
@@ -183,8 +188,12 @@
         <ul>
             <li><strong>Storage</strong>: To save your encrypted profile data locally</li>
             <li><strong>Active Tab</strong>: To inject profile text into AI chat interfaces</li>
+            <li><strong>Tabs</strong>: Required for the Quiz of Gems feature to open in a new tab (does NOT access browsing history)</li>
+            <li><strong>Context Menus</strong>: To provide right-click menu options</li>
+            <li><strong>Scripting</strong>: To inject the profile button into AI chat interfaces</li>
             <li><strong>Host permissions</strong>: To interact with supported AI platforms (ChatGPT, Claude, Gemini, Perplexity)</li>
         </ul>
+        <p><strong>Important</strong>: The tabs permission is used solely for opening the quiz page. We cannot and do not access your browsing history or monitor your activity.</p>
 
         <h2>Third-Party Services</h2>
         <p>This extension does not use any third-party services, analytics, or tracking tools.</p>

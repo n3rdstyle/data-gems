@@ -1,6 +1,7 @@
 # Privacy Policy - Data Gems
 
-**Last Updated: September 12, 2025**
+**Last Updated: September 26, 2025**
+**Version: 1.1.0**
 
 ## Overview
 
@@ -16,6 +17,9 @@ Data Gems - Personal Context Provider ("Data Gems", "the Extension", "we", "our"
 - **Personal profile information**: Only data you explicitly enter into the extension
 - **User preferences**: Settings and configuration choices you make
 - **Usage patterns**: Local preferences for profile injection and interface customization
+- **Quiz responses**: Your answers to the Quiz of Gems feature for profile enrichment
+- **Prompt library**: Custom prompts and commands you create for quick access
+- **Subprofiles**: Different context configurations for various use cases
 
 ### Where We Store It
 - **100% Local Storage**: All data is stored locally on your device using Chrome's storage API
@@ -51,6 +55,7 @@ Data Gems requests the following permissions for functionality:
 - **scripting**: Inject the profile button into AI chat interfaces
 - **activeTab**: Access the current tab to insert profile data when you click inject
 - **contextMenus**: Provide right-click menu options
+- **tabs**: Access tab information for quiz feature functionality
 - **commands**: Enable keyboard shortcuts
 
 ### Host Permissions
@@ -61,6 +66,10 @@ Access to specific AI platform domains to inject functionality:
 - perplexity.ai
 
 **Important**: These permissions are used solely for core functionality. No data monitoring, collection, or transmission occurs.
+
+### New in v1.1.0
+- **tabs permission**: Required for the Quiz of Gems feature to open in a new tab. This permission does NOT allow us to see your browsing history or monitor your activity - it only allows the extension to open and communicate with the quiz page.
+- **web_accessible_resources**: The quiz.html page is made accessible as a web resource to enable the interactive quiz feature.
 
 ## Data Security
 
@@ -79,10 +88,12 @@ Access to specific AI platform domains to inject functionality:
 You have complete control over your data:
 
 - **Add/Edit/Delete**: Modify any profile information at any time
-- **Export**: Create encrypted backups of your profile data  
-- **Import**: Restore profiles from backup files
+- **Export**: Create encrypted backups of your profile data including prompt library
+- **Import**: Restore profiles and prompts from backup files
 - **Clear All**: Completely remove all stored data from the extension
 - **Granular Control**: Choose which parts of your profile to inject per conversation
+- **Subprofile Management**: Create and switch between different context profiles
+- **Quiz Control**: Take or skip the interactive quiz to build your profile
 
 ## Third-Party Interactions
 
