@@ -73,6 +73,7 @@ export default function WaitlistPage() {
     <div className="relative h-screen overflow-hidden">
       <DataGemsBackground />
       {/* Full width background layer */}
+      {/* Auto-deployment test: GitHub -> Vercel integration active */}
       <div className="absolute inset-0 bg-gradient-to-br from-background/50 to-background/80 z-0" />
 
       <div className="relative z-10 h-screen flex">
