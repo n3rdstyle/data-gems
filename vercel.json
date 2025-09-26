@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd data-gems-waitlist && npm run build",
+  "installCommand": "cd data-gems-waitlist && npm install",
+  "outputDirectory": "data-gems-waitlist/.next",
+  "framework": "nextjs",
+  "rootDirectory": "data-gems-waitlist"
+}
