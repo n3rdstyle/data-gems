@@ -1,0 +1,438 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prompt Profile Options</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 16px; max-width: 720px; }
+      textarea { width: 100%; height: 200px; }
+      input[type="password"], input[type="number"], input[type="text"], select { width: 100%; }
+      .row { display: flex; gap: 12px; align-items: center; }
+      .row > * { flex: 1; }
+      .hint { color: #555; font-size: 12px; }
+      .danger { color: #b00020; }
+      
+      .profile-form { 
+        margin-bottom: 20px; 
+      }
+      .form-section { 
+        margin: 20px 0; 
+        padding: 16px; 
+        border: 1px solid #ddd; 
+        border-radius: 4px; 
+      }
+      .form-section h3 { 
+        margin: 0 0 12px 0; 
+        color: #333; 
+      }
+      .form-section label { 
+        display: block; 
+        margin: 8px 0; 
+        font-weight: 500; 
+      }
+      .form-section input, .form-section select, .form-section textarea { 
+        margin-top: 4px; 
+      }
+      .form-section textarea { 
+        height: 60px; 
+      }
+      
+      /* Questions styling */
+      .questions-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 12px;
+      }
+      .question-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border: 1px solid #eee;
+        border-radius: 4px;
+        background: #f9f9f9;
+      }
+      .question-item input[type="checkbox"] {
+        margin: 0;
+        width: auto;
+      }
+      .question-item input[type="text"] {
+        margin: 0;
+        padding: 4px 8px;
+        border: 1px solid #ddd;
+        border-radius: 2px;
+        font-size: 12px;
+      }
+      .question-text {
+        font-size: 12px;
+        color: #555;
+        flex: 1;
+      }
+      
+      /* Advanced section */
+      .advanced-section {
+        margin-top: 30px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .advanced-section summary {
+        padding: 12px;
+        background: #f5f5f5;
+        cursor: pointer;
+        border-radius: 4px 4px 0 0;
+      }
+      .advanced-section summary h3 {
+        margin: 0;
+        display: inline;
+      }
+      .advanced-section[open] summary {
+        border-bottom: 1px solid #ddd;
+      }
+      .editor-panel {
+        padding: 16px;
+      }
+      
+      /* Subprofiles section */
+      .subprofiles-section {
+        margin-top: 30px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .subprofile-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid #eee;
+        gap: 12px;
+      }
+      .subprofile-item:last-child {
+        border-bottom: none;
+      }
+      .subprofile-icon {
+        font-size: 20px;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        color: white;
+      }
+      .subprofile-info {
+        flex: 1;
+      }
+      .subprofile-info h4 {
+        margin: 0 0 4px 0;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .subprofile-info p {
+        margin: 0;
+        font-size: 12px;
+        color: #666;
+      }
+      .subprofile-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .btn {
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .btn:hover {
+        background: #f5f5f5;
+      }
+      .btn-primary {
+        background: #2563eb;
+        color: white;
+        border-color: #2563eb;
+      }
+      .btn-primary:hover {
+        background: #1d4ed8;
+      }
+      .btn-danger {
+        background: #dc2626;
+        color: white;
+        border-color: #dc2626;
+      }
+      .btn-danger:hover {
+        background: #b91c1c;
+      }
+      
+      /* Templates grid */
+      .templates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+      }
+      .template-card {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 16px;
+        cursor: pointer;
+        transition: border-color 0.2s;
+      }
+      .template-card:hover {
+        border-color: #2563eb;
+      }
+      .template-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .template-icon {
+        font-size: 18px;
+      }
+      .template-name {
+        font-weight: 600;
+        margin: 0;
+      }
+      .template-description {
+        font-size: 12px;
+        color: #666;
+        margin: 0;
+      }
+      
+      /* Toggle Switch Styles */
+      .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+      }
+      
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      
+      .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 24px;
+      }
+      
+      .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+      }
+      
+      .toggle-switch input:checked + .toggle-slider {
+        background-color: #667eea;
+      }
+      
+      .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(26px);
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Profile Configuration</h2>
+    
+    <!-- Primary Form Interface -->
+    <div id="profileForm" class="profile-form">
+      
+      <!-- Identity Section -->
+      <div class="form-section">
+        <h3>Identity</h3>
+        <label>Display Name: <input type="text" id="displayName" placeholder="Your name or handle"></label>
+        <label>Languages: <input type="text" id="languages" placeholder="English, German, French"></label>
+        <label>Location: <input type="text" id="location" placeholder="Berlin, Germany"></label>
+      </div>
+      
+      <!-- Style Section (was Preferences) -->
+      <div class="form-section">
+        <h3>Style</h3>
+        <label>Tone: <select id="tone">
+          <option value="">Select tone...</option>
+          <option value="professional">Professional</option>
+          <option value="casual">Casual</option>
+          <option value="friendly">Friendly</option>
+          <option value="formal">Formal</option>
+          <option value="technical">Technical</option>
+          <option value="creative">Creative</option>
+        </select></label>
+        <label>Formatting: <select id="formatting">
+          <option value="">Select formatting...</option>
+          <option value="bullet-points">Bullet Points</option>
+          <option value="numbered-lists">Numbered Lists</option>
+          <option value="paragraphs">Paragraphs</option>
+          <option value="structured">Structured</option>
+          <option value="minimal">Minimal</option>
+        </select></label>
+        <label>Topics: <input type="text" id="topics" placeholder="Technology, Science, Business"></label>
+      </div>
+
+      <!-- About Me Section (Questions) -->
+      <div class="form-section">
+        <h3>About Me</h3>
+        <label>Additional Preferences: <textarea id="additionalPreferences" placeholder="Share any preferences, affinities, or other details about yourself that you'd like to include..."></textarea></label>
+        <div id="questionsContainer" class="questions-container">
+          <!-- Questions will be rendered here by JavaScript -->
+        </div>
+      </div>
+
+      <!-- Legacy Constraints Section (kept for backward compatibility) -->
+      <div class="form-section">
+        <h3>Constraints</h3>
+        <label>Avoid: <input type="text" id="avoid" placeholder="Jargon, assumptions, overly complex explanations"></label>
+        <label>Privacy Notes: <textarea id="privacyNotes" placeholder="Any specific privacy considerations..."></textarea></label>
+      </div>
+      
+      <div class="row">
+        <button id="loadForm">Load Profile</button>
+        <button id="saveForm">Save Profile</button>
+      </div>
+    </div>
+
+    <!-- Advanced JSON Editor (Collapsible) -->
+    <details class="advanced-section">
+      <summary><h3>Advanced JSON Editor</h3></summary>
+      <div id="jsonEditor" class="editor-panel">
+        <textarea id="profile" placeholder='{"version":"2","identity":{},"style":{},"answers":[]}'></textarea>
+        <div class="row">
+          <button id="load">Load</button>
+          <button id="save">Save</button>
+          <button id="format">Format JSON</button>
+        </div>
+      </div>
+    </details>
+    
+    <div id="error" class="danger"></div>
+
+    <!-- Subprofiles Management Section -->
+    <div class="subprofiles-section">
+      <div style="padding: 16px; background: #f8f9fa; border-bottom: 1px solid #ddd;">
+        <h2 style="margin: 0 0 8px 0;">📁 Subprofiles</h2>
+        <p style="margin: 0; color: #666; font-size: 14px;">Create focused versions of your profile for different contexts</p>
+      </div>
+      
+      <div id="subprofilesList">
+        <!-- Subprofiles will be rendered here -->
+      </div>
+      
+      <div style="padding: 16px;">
+        <button id="createSubprofileBtn" class="btn btn-primary">+ Create New Subprofile</button>
+        
+        <h4 style="margin: 16px 0 8px 0;">Quick Templates</h4>
+        <div class="templates-grid">
+          <div class="template-card" data-template="professional">
+            <div class="template-header">
+              <span class="template-icon">💼</span>
+              <h4 class="template-name">Professional</h4>
+            </div>
+            <p class="template-description">Work-related information and preferences</p>
+          </div>
+          <div class="template-card" data-template="personal">
+            <div class="template-header">
+              <span class="template-icon">🏠</span>
+              <h4 class="template-name">Personal</h4>
+            </div>
+            <p class="template-description">Hobbies, preferences, and lifestyle</p>
+          </div>
+          <div class="template-card" data-template="creative">
+            <div class="template-header">
+              <span class="template-icon">🎨</span>
+              <h4 class="template-name">Creative</h4>
+            </div>
+            <p class="template-description">Artistic preferences and creative projects</p>
+          </div>
+          <div class="template-card" data-template="learning">
+            <div class="template-header">
+              <span class="template-icon">📚</span>
+              <h4 class="template-name">Learning</h4>
+            </div>
+            <p class="template-description">Educational preferences and learning style</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Beta Lab Section -->
+    <div class="subprofiles-section" style="margin-top: 30px;">
+      <div style="padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 6px 6px 0 0;">
+        <h2 style="margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;">
+          <span>🧪</span> Beta Lab
+        </h2>
+        <p style="margin: 0; opacity: 0.9; font-size: 14px;">Experimental features and upcoming capabilities</p>
+      </div>
+      
+      <div style="padding: 20px;">
+        <!-- Auto-Injection Feature -->
+        <div class="form-section" style="margin: 0 0 20px 0;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <div>
+              <h3 style="margin: 0 0 4px 0;">Auto-Injection</h3>
+              <p style="margin: 0; color: #666; font-size: 14px;">Automatically inject your profile when opening new chats</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="betaAutoInjectToggle">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          
+          <div id="betaAutoInjectSettings" style="display: none; margin-top: 16px; padding: 16px; background: #f8f9fa; border-radius: 6px;">
+            <label style="display: block; margin-bottom: 12px;">
+              Injection Delay:
+              <select id="betaAutoInjectDelay" style="margin-left: 8px; width: auto; display: inline-block;">
+                <option value="1">1 second</option>
+                <option value="2" selected>2 seconds</option>
+                <option value="3">3 seconds</option>
+                <option value="5">5 seconds</option>
+              </select>
+            </label>
+            <p style="margin: 0; font-size: 12px; color: #666;">
+              Currently using: <span id="betaCurrentProfile" style="font-weight: 500;">Full Profile</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Prompt Library Feature -->
+        <div class="form-section" style="margin: 0;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <div>
+              <h3 style="margin: 0 0 4px 0;">Prompt Library</h3>
+              <p style="margin: 0; color: #666; font-size: 14px;">Save and organize reusable prompts for quick access</p>
+            </div>
+            <button id="openPromptLibraryBtn" class="btn btn-primary" style="white-space: nowrap;">
+              Manage Library
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2>Import / Export</h2>
+    <div class="row">
+      <button id="export">Export Encrypted</button>
+      <input id="importFile" type="file" accept="application/json" />
+      <button id="import">Import Encrypted</button>
+    </div>
+    <pre class="hint">Exported data is encrypted. Passphrase is required to access it.</pre>
+
+    <script type="module" src="./options.js"></script>
+  </body>
+</html>
+

@@ -1,0 +1,32 @@
+Chrome Web Store Update - Data Gems v1.0.1
+
+CHANGELOG:
+
+New Features:
+✨ Customizable Profile Name
+- Users can now edit their profile name directly in the extension popup
+- Click on the name next to the profile avatar to edit
+- Shows helpful placeholder "Put your name here" when no name is set
+- Profile avatar letter updates automatically based on the name
+- Changes are saved automatically with smart debouncing
+
+Improvements:
+🔧 Enhanced User Experience
+- Smooth editing experience with hover and focus visual feedback
+- Real-time avatar letter updates while typing
+- Persistent storage ensures name is remembered across sessions
+- Clean, intuitive interface that matches existing design patterns
+
+Technical Updates:
+🛠️ Code Quality
+- Added proper event handling for profile name editing
+- Implemented debounced saving to optimize performance
+- Enhanced CSS styling for better visual consistency
+- Added proper placeholder handling using CSS pseudo-elements
+
+SUBMISSION NOTES:
+- This is a minor feature update focusing on user personalization
+- No new permissions required
+- Backward compatible with existing user data
+- All functionality tested and validated
+- Category: Bug fixes and improvements
