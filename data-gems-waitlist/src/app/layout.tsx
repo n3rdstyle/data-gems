@@ -14,7 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Data Gems - Your Personal AI Context Provider",
-  description: "Build your personal profile and inject it into AI chats with one click. Join the waitlist for early access.",
+  description: "Data Gems is the personal context provider that makes AI truly understand you. Build your personal profile continuously, and attach it into any AI conversation with a single click. Join the waitlist for early access.",
+  // Last deployed: 2025-09-26 08:30 via GitHub Actions
   icons: {
     icon: [
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
