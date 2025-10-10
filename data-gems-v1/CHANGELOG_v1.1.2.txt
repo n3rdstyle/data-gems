@@ -1,0 +1,130 @@
+Data Gems - Personal Context Provider
+Version 1.1.2 Changelog
+Released: October 10, 2025
+
+===================================
+🔧 CRITICAL FIX: GEMINI BUTTON VISIBILITY
+===================================
+
+This release fixes the Gemini inject button not appearing issue.
+
+---
+BUG FIX:
+---
+
+✅ FIXED: Gemini Inject Button Not Appearing
+   - Updated isNewChatState() detection logic for Gemini
+   - Fixed overly strict selector that prevented button from showing
+   - Button now correctly appears on Gemini's /app page
+   - Improved detection to check for actual message content
+
+---
+TECHNICAL CHANGES:
+---
+
+Root Cause:
+  The old detection logic used:
+    document.querySelectorAll('[class*="conversation"], [class*="message"]')
+
+  This was matching UI elements (like navigation) that had "message"
+  in their class names, causing false positives even on empty chats.
+
+The Fix:
+  New logic looks for actual message content elements:
+    - message-content
+    - model-response
+    - user-query
+    - [data-test-id*="conversation-turn"]
+
+  Plus checks if on /app home page:
+    - window.location.pathname === '/app'
+
+  Result: Button now appears correctly on new/empty Gemini chats!
+
+Modified Files:
+  • src/content.js - Lines 1754-1764 (isNewChatState function)
+  • manifest.json - Version bump to 1.1.2
+
+---
+TESTING VERIFICATION:
+---
+
+Tested on Gemini (https://gemini.google.com/app):
+  ✓ Button appears on fresh /app page
+  ✓ Button appears on new empty chats
+  ✓ Button disappears after sending first message
+  ✓ Button functionality works correctly
+
+All other platforms still working:
+  ✓ ChatGPT
+  ✓ Claude AI
+  ✓ Perplexity
+
+---
+PREVIOUS FIXES (from v1.1.1):
+---
+
+✅ Blue Argon Violation - Remote Code
+   - JSZip bundled locally
+   - No external dependencies
+
+✅ Manifest V3 Compliance
+   - All code included in package
+   - 100% compliant
+
+---
+WHAT CHANGED FROM v1.1.1 to v1.1.2:
+---
+
+• src/content.js - Updated Gemini new chat detection (10 lines)
+• manifest.json - Version 1.1.1 → 1.1.2
+
+That's it! Focused fix for Gemini button visibility.
+
+---
+RESUBMISSION STATUS:
+---
+
+Chrome Web Store Routing ID: FZSL
+Previous Violations: Blue Argon (FIXED), Red Potassium (NOW TRULY FIXED)
+
+This version resolves the actual Gemini functionality issue that
+the reviewer correctly identified. The button now appears as expected.
+
+---
+COMPATIBILITY:
+---
+
+• Chrome/Edge: Version 88+
+• Manifest Version: 3
+• Supported Platforms: ChatGPT, Claude, Gemini, Perplexity
+• All platforms verified working
+
+---
+USER IMPACT:
+---
+
+Before v1.1.2:
+  ❌ Gemini users couldn't see inject button
+  ❌ Had to use extension popup instead
+
+After v1.1.2:
+  ✅ Button appears immediately on new chats
+  ✅ Seamless one-click injection
+  ✅ Matches functionality on other platforms
+
+---
+DEVELOPER NOTE:
+---
+
+Thank you for catching this! The Chrome Web Store reviewer was
+correct - Gemini injection wasn't working properly due to the
+button not appearing. This fix resolves the issue completely.
+
+The detection logic now properly identifies Gemini's current UI
+structure and shows the button at the right time.
+
+---
+For detailed information about all fixes, see:
+• CHROME_STORE_FIXES_v1.1.2.md (updated)
+• RESUBMISSION_GUIDE_v1.1.2.md (updated)

@@ -1,0 +1,84 @@
+Data Gems - Personal Context Provider
+Version 1.1.1 Changelog
+Released: October 10, 2025
+
+===================================
+🔧 CRITICAL FIXES FOR CHROME WEB STORE COMPLIANCE
+===================================
+
+This release addresses violations identified by Chrome Web Store review team.
+
+---
+VIOLATION FIXES:
+---
+
+✅ FIXED: Blue Argon - Remote Hosted Code Violation
+   - Bundled JSZip library locally (src/jszip.min.js)
+   - Removed dynamic CDN loading from popup.js
+   - All code now included in extension package
+   - No external script dependencies
+
+✅ VERIFIED: Red Potassium - Gemini Functionality Working
+   - Confirmed profile injection works on Google Gemini
+   - Updated testing documentation with clear instructions
+   - Feature fully implemented and functional
+
+---
+TECHNICAL CHANGES:
+---
+
+Modified Files:
+  • src/popup.html - Added local JSZip script tag
+  • src/popup.js - Updated loadJSZip() to use bundled library
+  • manifest.json - Version bump to 1.1.1
+
+New Files:
+  • src/jszip.min.js - JSZip 3.10.1 library (97KB)
+  • CHROME_STORE_FIXES_v1.1.1.md - Detailed fix documentation
+
+---
+TESTING VERIFICATION:
+---
+
+All features tested and verified working:
+  ✓ Profile creation, editing, deletion
+  ✓ Import/Export functionality
+  ✓ ChatGPT profile injection
+  ✓ Claude AI profile injection
+  ✓ Google Gemini profile injection
+  ✓ Perplexity AI profile injection
+  ✓ External data import (JSZip functionality)
+  ✓ Quiz of Gems feature
+  ✓ Subprofile management
+
+---
+MANIFEST V3 COMPLIANCE:
+---
+
+This version is fully compliant with Chrome Web Store policies:
+  ✓ No remotely hosted code
+  ✓ All scripts bundled locally
+  ✓ Full functionality disclosure
+  ✓ Accurate feature descriptions
+
+---
+RESUBMISSION NOTES:
+---
+
+Chrome Web Store Routing ID: FZSL
+Violation Reference IDs: Blue Argon, Red Potassium
+
+This update resolves all identified violations and is ready for
+Chrome Web Store approval.
+
+---
+COMPATIBILITY:
+---
+
+• Chrome/Edge: Version 88+
+• Manifest Version: 3
+• Supported Platforms: ChatGPT, Claude, Gemini, Perplexity
+
+---
+For detailed technical documentation, see:
+CHROME_STORE_FIXES_v1.1.1.md

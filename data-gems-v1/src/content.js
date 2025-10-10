@@ -1752,7 +1752,15 @@ function isNewChatState() {
   }
   
   if (hostname.includes('gemini.google.com')) {
-    return document.querySelectorAll('[class*="conversation"], [class*="message"]').length === 0;
+    // For Gemini, check multiple indicators of a new chat
+    // Look for actual chat messages (not UI elements with "message" in their class)
+    const hasMessages = document.querySelectorAll('message-content, [data-test-id*="conversation-turn"], model-response, user-query').length > 0;
+
+    // Check if we're on the main /app page without a specific chat ID
+    const isAppHome = window.location.pathname === '/app' || window.location.pathname === '/app/';
+
+    // Consider it a new chat if there are no messages OR we're on the app home page
+    return !hasMessages || isAppHome;
   }
   
   // Default: assume it's always a new chat for other platforms

@@ -3397,14 +3397,13 @@ async function processChatGPTZip(file) {
 }
 
 async function loadJSZip() {
-  // Dynamically load JSZip library
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-    script.onload = () => resolve(window.JSZip);
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
+  // JSZip is now bundled locally and loaded via script tag in popup.html
+  // Simply return the global JSZip object
+  if (typeof JSZip !== 'undefined') {
+    return Promise.resolve(JSZip);
+  } else {
+    return Promise.reject(new Error('JSZip library not loaded'));
+  }
 }
 
 async function extractInsightsFromConversations(conversations) {
