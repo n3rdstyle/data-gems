@@ -2373,6 +2373,15 @@ button:focus-visible {
 }
 
 /* Beta Lab Modal Styles */
+.beta-lab-modal {
+  max-width: 600px;
+}
+
+.beta-lab-modal .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
 .beta-lab-modal .modal-header-content {
   display: flex;
   align-items: center;
@@ -3623,4 +3632,355 @@ button:focus-visible {
 
 .footer-buttons .button {
   flex: 1;
+}
+
+/* ============================================ */
+/* CSV CONVERTER MODAL STYLES */
+/* ============================================ */
+
+.csv-converter-modal {
+  max-width: 700px;
+  max-height: 85vh;
+}
+
+.csv-converter-modal .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.csv-intro {
+  background: var(--muted);
+  padding: 16px;
+  border-radius: var(--radius-small);
+  margin-bottom: 24px;
+}
+
+.csv-intro p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--foreground);
+}
+
+.csv-intro p:last-child {
+  margin-bottom: 0;
+}
+
+.csv-format-info {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--background);
+  border-radius: var(--radius-small);
+  border: 1px solid var(--border);
+}
+
+.csv-format-info h4 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.csv-format-info code {
+  display: block;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+  color: #d63384;
+  margin-bottom: 8px;
+}
+
+.csv-format-info .format-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+/* File Upload Area */
+.csv-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 48px 24px;
+  text-align: center;
+  transition: all 0.3s ease;
+  background: var(--muted);
+  cursor: pointer;
+}
+
+.csv-upload-area:hover {
+  border-color: var(--primary);
+  background: var(--background);
+}
+
+.csv-upload-area.dragover {
+  border-color: var(--primary);
+  background: var(--background);
+  transform: scale(1.02);
+}
+
+.upload-icon {
+  margin: 0 auto 16px;
+  color: var(--muted-foreground);
+}
+
+.csv-upload-area h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.csv-upload-area p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+
+.upload-hint {
+  font-size: 12px !important;
+  color: var(--muted-foreground) !important;
+}
+
+/* CSV Preview Section */
+.csv-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.csv-preview-header h3 {
+  margin: 0;
+  flex: 1;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+#csvBackBtn {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* CSV Stats */
+.csv-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+/* Category Options */
+.csv-category-options {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--muted);
+  border-radius: var(--radius-small);
+}
+
+.csv-category-options h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.category-option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.category-option-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.category-option-group input[type="radio"] {
+  cursor: pointer;
+}
+
+.category-option-group select {
+  margin-left: 8px;
+  flex: 1;
+  max-width: 250px;
+}
+
+/* CSV Preview Content */
+.csv-preview-content {
+  margin-bottom: 20px;
+}
+
+.preview-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: var(--muted);
+  border-radius: var(--radius-small);
+  margin-bottom: 16px;
+}
+
+.preview-list-header label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.selected-count {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.csv-preview-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  padding: 8px;
+}
+
+.csv-preview-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  transition: all 0.2s ease;
+}
+
+.csv-preview-item:hover:not(.duplicate) {
+  background: var(--muted);
+  border-color: var(--primary);
+}
+
+.csv-preview-item.duplicate {
+  opacity: 0.5;
+  background: #f5f5f5;
+}
+
+.preview-item-checkbox {
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2px;
+}
+
+.preview-item-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.preview-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.preview-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.preview-item-number {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.preview-item-category {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--primary);
+  background: rgba(236, 111, 149, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.duplicate-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--destructive);
+  background: rgba(193, 53, 21, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.preview-item-question {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.preview-item-answer {
+  font-size: 13px;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+
+/* CSV Import Actions */
+.csv-import-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* Success Section */
+.success-message {
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.success-icon {
+  color: var(--accent);
+  margin: 0 auto 24px;
+  animation: checkmark 0.5s ease-in-out;
+}
+
+@keyframes checkmark {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.success-message h3 {
+  margin: 0 0 12px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.success-message p {
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  color: var(--muted-foreground);
 }

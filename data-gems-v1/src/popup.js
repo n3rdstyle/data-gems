@@ -3850,9 +3850,474 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, m => map[m]);
 }
 
+// ============================================
+// CSV QUIZ CONVERTER FUNCTIONALITY
+// ============================================
+
+let csvParsedItems = [];
+let csvSelectedItems = new Set();
+
+// Initialize CSV converter elements and event listeners
+function initializeCSVConverter() {
+  // Get elements
+  const openCSVConverterBtn = document.getElementById('openCSVConverterBtn');
+  const csvConverterModal = document.getElementById('csvConverterModal');
+  const closeCSVConverterModal = document.getElementById('closeCSVConverterModal');
+  const csvFileInput = document.getElementById('csvFileInput');
+  const csvSelectFileBtn = document.getElementById('csvSelectFileBtn');
+  const csvUploadArea = document.getElementById('csvUploadArea');
+  const csvBackBtn = document.getElementById('csvBackBtn');
+  const csvSelectAll = document.getElementById('csvSelectAll');
+  const csvCancelImportBtn = document.getElementById('csvCancelImportBtn');
+  const csvConfirmImportBtn = document.getElementById('csvConfirmImportBtn');
+  const csvDoneBtn = document.getElementById('csvDoneBtn');
+
+  // Category mode radio buttons
+  const categoryModeRadios = document.querySelectorAll('input[name="categoryMode"]');
+  const csvSingleCategory = document.getElementById('csvSingleCategory');
+
+  // Event listeners
+  if (openCSVConverterBtn) {
+    openCSVConverterBtn.addEventListener('click', openCSVConverterModal);
+  }
+
+  if (closeCSVConverterModal) {
+    closeCSVConverterModal.addEventListener('click', closeCSVConverterModalFunc);
+  }
+
+  if (csvSelectFileBtn) {
+    csvSelectFileBtn.addEventListener('click', () => csvFileInput.click());
+  }
+
+  if (csvFileInput) {
+    csvFileInput.addEventListener('change', handleCSVFileSelection);
+  }
+
+  // Drag and drop
+  if (csvUploadArea) {
+    csvUploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      csvUploadArea.classList.add('dragover');
+    });
+
+    csvUploadArea.addEventListener('dragleave', () => {
+      csvUploadArea.classList.remove('dragover');
+    });
+
+    csvUploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      csvUploadArea.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0 && files[0].name.endsWith('.csv')) {
+        csvFileInput.files = files;
+        handleCSVFileSelection({ target: { files } });
+      }
+    });
+  }
+
+  if (csvBackBtn) {
+    csvBackBtn.addEventListener('click', () => {
+      showCSVSection('upload');
+      csvFileInput.value = '';
+    });
+  }
+
+  if (csvSelectAll) {
+    csvSelectAll.addEventListener('change', handleCSVSelectAll);
+  }
+
+  if (csvCancelImportBtn) {
+    csvCancelImportBtn.addEventListener('click', closeCSVConverterModalFunc);
+  }
+
+  if (csvConfirmImportBtn) {
+    csvConfirmImportBtn.addEventListener('click', confirmCSVImport);
+  }
+
+  if (csvDoneBtn) {
+    csvDoneBtn.addEventListener('click', closeCSVConverterModalFunc);
+  }
+
+  // Category mode change
+  categoryModeRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      csvSingleCategory.disabled = e.target.value !== 'single';
+      if (e.target.value === 'auto') {
+        // Re-apply auto categorization
+        applyAutoCategorization();
+        renderCSVPreview();
+      } else {
+        // Apply single category
+        applySingleCategory();
+        renderCSVPreview();
+      }
+    });
+  });
+
+  if (csvSingleCategory) {
+    csvSingleCategory.addEventListener('change', () => {
+      applySingleCategory();
+      renderCSVPreview();
+    });
+  }
+}
+
+function openCSVConverterModal() {
+  console.log('📊 Opening CSV Converter modal');
+  const modal = document.getElementById('csvConverterModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    showCSVSection('upload');
+
+    // Reset file input
+    const fileInput = document.getElementById('csvFileInput');
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  }
+}
+
+function closeCSVConverterModalFunc() {
+  const modal = document.getElementById('csvConverterModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+  // Reset state
+  csvParsedItems = [];
+  csvSelectedItems.clear();
+  showCSVSection('upload');
+}
+
+function showCSVSection(section) {
+  const uploadSection = document.getElementById('csvUploadSection');
+  const previewSection = document.getElementById('csvPreviewSection');
+  const successSection = document.getElementById('csvSuccessSection');
+
+  if (uploadSection) uploadSection.style.display = section === 'upload' ? 'block' : 'none';
+  if (previewSection) previewSection.style.display = section === 'preview' ? 'block' : 'none';
+  if (successSection) successSection.style.display = section === 'success' ? 'block' : 'none';
+}
+
+async function handleCSVFileSelection(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (!file.name.endsWith('.csv')) {
+    alert('Please select a CSV file.');
+    return;
+  }
+
+  try {
+    const text = await file.text();
+    csvParsedItems = parseCSV(text);
+
+    if (csvParsedItems.length === 0) {
+      alert('No valid questions found in the CSV file.');
+      return;
+    }
+
+    // Apply auto-categorization by default
+    applyAutoCategorization();
+
+    // Check for duplicates
+    const existingSet = new Set(
+      contextItems.map(item => `${item.question}:${item.answer}`)
+    );
+
+    csvParsedItems.forEach(item => {
+      const itemKey = `${item.question}:${item.answer}`;
+      item.isDuplicate = existingSet.has(itemKey);
+      item.selected = !item.isDuplicate; // Auto-select non-duplicates
+    });
+
+    // Update selected items set
+    csvSelectedItems.clear();
+    csvParsedItems.forEach((item, index) => {
+      if (item.selected) {
+        csvSelectedItems.add(index);
+      }
+    });
+
+    // Update stats
+    const totalCount = csvParsedItems.length;
+    const duplicateCount = csvParsedItems.filter(item => item.isDuplicate).length;
+    const newItemCount = totalCount - duplicateCount;
+
+    document.getElementById('csvItemCount').textContent = totalCount;
+    document.getElementById('csvNewItemCount').textContent = newItemCount;
+    document.getElementById('csvDuplicateCount').textContent = duplicateCount;
+    document.getElementById('csvSelectedCount').textContent = `${csvSelectedItems.size} selected`;
+    document.getElementById('csvImportCount').textContent = csvSelectedItems.size;
+
+    // Update select all checkbox
+    const selectAllCheckbox = document.getElementById('csvSelectAll');
+    if (selectAllCheckbox) {
+      selectAllCheckbox.checked = csvSelectedItems.size === csvParsedItems.filter(item => !item.isDuplicate).length;
+    }
+
+    // Render preview
+    renderCSVPreview();
+
+    // Show preview section
+    showCSVSection('preview');
+
+  } catch (error) {
+    console.error('Error parsing CSV:', error);
+    alert('Error parsing CSV file. Please make sure it\'s in the correct format.');
+  }
+}
+
+function parseCSV(csvText) {
+  const lines = csvText.split(/\r?\n/).filter(line => line.trim());
+  if (lines.length === 0) return [];
+
+  const items = [];
+
+  // Skip header row (first line)
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    // Parse CSV line (handle quotes and commas)
+    const values = parseCSVLine(line);
+
+    if (values.length >= 3) {
+      const nr = values[0];
+      const question = values[1].trim();
+      const answer = values[2].trim();
+
+      if (question && answer) {
+        items.push({
+          nr,
+          question,
+          answer,
+          category: 'Lifestyle & Preferences', // Default, will be auto-detected
+          selected: true,
+          isDuplicate: false
+        });
+      }
+    }
+  }
+
+  return items;
+}
+
+function parseCSVLine(line) {
+  const values = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        // Escaped quote
+        current += '"';
+        i++; // Skip next quote
+      } else {
+        // Toggle quotes
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      // End of field
+      values.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+
+  // Add last field
+  values.push(current);
+
+  return values;
+}
+
+function detectCategory(question) {
+  const q = question.toLowerCase();
+
+  // German keyword mapping to categories
+  const categoryKeywords = {
+    'Food & Drink': ['essen', 'trinken', 'getränk', 'kochen', 'restaurant', 'gericht', 'frühstück', 'kaffee', 'snack', 'küche'],
+    'Travel & Activities': ['urlaub', 'reise', 'wochenende', 'stadt', 'land', 'flug', 'hotel', 'unterkunft', 'aktivität'],
+    'Entertainment & Media': ['film', 'serie', 'musik', 'konzert', 'song', 'buch', 'lesen', 'schauen', 'hören', 'event'],
+    'Hobbies': ['hobby', 'spielzeug', 'spielen', 'beschäftigung', 'freizeit', 'sport'],
+    'Work & Professional': ['arbeit', 'beruf', 'job', 'produktiv', 'ausbildung', 'studium', 'fach', 'universität'],
+    'Technology & Communication': ['app', 'handy', 'techni', 'gerät', 'digital', 'software', 'website'],
+    'Transportation': ['auto', 'fahren', 'verkehr', 'transport'],
+    'Social & Personal': ['freund', 'familie', 'beziehung', 'mensch', 'kommunizier', 'eigenschaft', 'kompliment'],
+    'Weather & Environment': ['wetter', 'jahreszeit', 'sonne', 'regen', 'temperatur', 'klima', 'natur', 'berg'],
+    'Lifestyle & Preferences': ['lieblings', 'favorite', 'präferenz', 'stil', 'morgen', 'abend', 'tag', 'perfekt', 'gefühl', 'duft', 'geruch', 'geräusch', 'farbe', 'kleidung', 'wohnung', 'haus', 'ort', 'platz']
+  };
+
+  // Check each category's keywords
+  for (const [category, keywords] of Object.entries(categoryKeywords)) {
+    for (const keyword of keywords) {
+      if (q.includes(keyword)) {
+        return category;
+      }
+    }
+  }
+
+  // Default category
+  return 'Lifestyle & Preferences';
+}
+
+function applyAutoCategorization() {
+  csvParsedItems.forEach(item => {
+    item.category = detectCategory(item.question);
+  });
+}
+
+function applySingleCategory() {
+  const selectedCategory = document.getElementById('csvSingleCategory').value;
+  csvParsedItems.forEach(item => {
+    item.category = selectedCategory;
+  });
+}
+
+function renderCSVPreview() {
+  const previewList = document.getElementById('csvPreviewList');
+  if (!previewList) return;
+
+  previewList.innerHTML = '';
+
+  csvParsedItems.forEach((item, index) => {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = `csv-preview-item ${item.isDuplicate ? 'duplicate' : ''}`;
+
+    const categoryEmoji = getCategoryEmoji(item.category);
+
+    itemDiv.innerHTML = `
+      <div class="preview-item-checkbox">
+        <input type="checkbox"
+          data-index="${index}"
+          ${item.selected ? 'checked' : ''}
+          ${item.isDuplicate ? 'disabled' : ''}>
+      </div>
+      <div class="preview-item-content">
+        <div class="preview-item-header">
+          <span class="preview-item-number">#${item.nr}</span>
+          <span class="preview-item-category">${categoryEmoji} ${item.category}</span>
+          ${item.isDuplicate ? '<span class="duplicate-badge">Duplicate</span>' : ''}
+        </div>
+        <div class="preview-item-question">${escapeHtml(item.question)}</div>
+        <div class="preview-item-answer">${escapeHtml(item.answer)}</div>
+      </div>
+    `;
+
+    const checkbox = itemDiv.querySelector('input[type="checkbox"]');
+    if (checkbox && !item.isDuplicate) {
+      checkbox.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.dataset.index);
+        if (e.target.checked) {
+          csvSelectedItems.add(idx);
+          csvParsedItems[idx].selected = true;
+        } else {
+          csvSelectedItems.delete(idx);
+          csvParsedItems[idx].selected = false;
+        }
+        updateCSVSelectionCount();
+      });
+    }
+
+    previewList.appendChild(itemDiv);
+  });
+}
+
+function getCategoryEmoji(category) {
+  const emojiMap = {
+    'Hobbies': '🎯',
+    'Food & Drink': '🍽️',
+    'Entertainment & Media': '🎬',
+    'Travel & Activities': '✈️',
+    'Lifestyle & Preferences': '💜',
+    'Work & Professional': '💼',
+    'Technology & Communication': '📱',
+    'Transportation': '🚗',
+    'Social & Personal': '👥',
+    'Weather & Environment': '☀️',
+    'Other': '📌'
+  };
+  return emojiMap[category] || '📌';
+}
+
+function handleCSVSelectAll(e) {
+  const isChecked = e.target.checked;
+  csvSelectedItems.clear();
+
+  csvParsedItems.forEach((item, index) => {
+    if (!item.isDuplicate) {
+      item.selected = isChecked;
+      if (isChecked) {
+        csvSelectedItems.add(index);
+      }
+    }
+  });
+
+  // Update checkboxes
+  document.querySelectorAll('#csvPreviewList input[type="checkbox"]:not(:disabled)').forEach(checkbox => {
+    checkbox.checked = isChecked;
+  });
+
+  updateCSVSelectionCount();
+}
+
+function updateCSVSelectionCount() {
+  document.getElementById('csvSelectedCount').textContent = `${csvSelectedItems.size} selected`;
+  document.getElementById('csvImportCount').textContent = csvSelectedItems.size;
+
+  // Update select all checkbox state
+  const selectAllCheckbox = document.getElementById('csvSelectAll');
+  if (selectAllCheckbox) {
+    const nonDuplicateCount = csvParsedItems.filter(item => !item.isDuplicate).length;
+    selectAllCheckbox.checked = csvSelectedItems.size === nonDuplicateCount && nonDuplicateCount > 0;
+  }
+}
+
+async function confirmCSVImport() {
+  const selectedItemsData = csvParsedItems.filter((item, index) => csvSelectedItems.has(index));
+
+  if (selectedItemsData.length === 0) {
+    alert('Please select at least one item to import.');
+    return;
+  }
+
+  // Convert to context items format
+  const newItems = selectedItemsData.map(item => ({
+    id: generateId(),
+    category: item.category,
+    question: item.question,
+    answer: item.answer,
+    source: 'csv-import',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }));
+
+  // Add to context items
+  contextItems = [...newItems, ...contextItems];
+
+  // Save to storage
+  await saveItems();
+
+  // Update UI
+  filterItems();
+  updateUI();
+
+  // Show success message
+  document.getElementById('csvSuccessMessage').textContent =
+    `${selectedItemsData.length} question${selectedItemsData.length !== 1 ? 's have' : ' has'} been added to your profile.`;
+  showCSVSection('success');
+
+  console.log(`✅ Imported ${selectedItemsData.length} items from CSV`);
+}
+
 // Initialize data import when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   initializeDataImport();
+  initializeCSVConverter();
 });
 
 // Fix: Add subprofile selector to the existing setupEventListeners function
